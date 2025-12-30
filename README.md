@@ -1,199 +1,172 @@
-# Digital Product Maturity Assessment System
+# 🎯 Система оценки зрелости цифровых продуктов региона
 
-Информационная система для оценки зрелости цифровых продуктов региона.
+Информационная система для оценки зрелости цифровых продуктов региона с веб-интерфейсом на Django (backend) и React (frontend).
 
-## Описание
+## 📋 Функциональные возможности
 
-Система предназначена для управления реестром цифровых продуктов, проведения оценочных сессий по различным критериям, визуализации результатов и генерации отчетов о зрелости продуктов.
+### Управление продуктами
+- Создание, редактирование и архивирование карточек продуктов
+- Атрибуты: название, описание, владелец, ссылка, дата запуска
 
-### Основные функции:
+### Конструктор модели оценки
+- Настройка иерархической модели оценки (домены → критерии)
+- Веса для доменов и критериев
+- Шкала оценки 1-10 с текстовыми описаниями
 
-- **FR-01:** Управление реестром цифровых продуктов
-- **FR-02:** Конструктор моделей оценки (домены и критерии)
-- **FR-03:** Проведение оценочных сессий
-- **FR-04:** Ввод и верификация оценочных данных
-- **FR-05:** Расчет и визуализация результатов
-- **FR-06:** Генерация отчетов (Паспорт зрелости продукта, сводный отчет)
-- **FR-07:** Управление пользователями и ролями
+### Сессии оценки
+- Инициация оценок для продуктов
+- Динамические анкеты на основе модели критериев
+- Частичное сохранение (можно заполнять постепенно)
+- Статусы: В ожидании → В процессе → Завершено
 
-## Технологический стек
+### Расчёт и визуализация
+- Автоматический расчёт индекса зрелости с учётом весов
+- Интерактивные дашборды:
+  - Радарный график по доменам
+  - Столбчатая диаграмма
+  - Круговая диаграмма прогресса
 
-- **Backend:** Django 4.2.7, Django REST Framework
-- **Frontend:** React 19.2.3
-- **Database:** PostgreSQL 15 (для Docker) / SQLite (для локальной разработки)
-- **Deployment:** Docker Compose
+### Отчётность
+- PDF-паспорт зрелости продукта (на русском языке)
+- Сводный отчёт по портфелю продуктов
 
-## Установка и запуск
+### Пользователи и роли
+- Регистрация и авторизация
+- Профили пользователей
+- Роли: Администратор, Эксперт, Владелец продукта, Наблюдатель
 
-### Вариант 1: Запуск с Docker Compose (рекомендуется)
+## 🛠 Технологии
 
-#### Требования:
-- Docker Desktop (Windows/Mac) или Docker + Docker Compose (Linux)
+| Компонент | Технология |
+|-----------|------------|
+| Backend | Python 3.11, Django 4.2, Django REST Framework |
+| Frontend | React 18, Chart.js, Axios |
+| База данных | SQLite (разработка) / PostgreSQL (production) |
+| Контейнеризация | Docker, Docker Compose |
 
-#### Шаги:
+## 🚀 Быстрый старт
 
-1. Клонируйте репозиторий:
+### Вариант 1: Локальный запуск
+
+#### Backend
 ```bash
-git clone <repository-url>
-cd digital_product_maturity_system
+cd backend/digital_product_maturity_project
+pip install -r ../requirements.txt
+python manage.py migrate
+python create_superuser.py  # Создаёт admin/admin123
+python populate_db.py       # Наполняет тестовыми данными
+python manage.py runserver
 ```
 
-2. Запустите все сервисы:
+#### Frontend
+```bash
+cd frontend
+npm install
+npm start
+```
+
+#### Доступ
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000/api/
+- Логин: `admin` / Пароль: `admin123`
+
+### Вариант 2: Docker Compose
+
 ```bash
 docker-compose up --build
 ```
 
-3. Приложение будет доступно по адресам:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000/api/
-   - Django Admin: http://localhost:8000/admin/
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000/api/
 
-4. Для создания суперпользователя (администратора):
-```bash
-docker-compose exec backend sh -c "cd digital_product_maturity_project && python manage.py createsuperuser"
-```
-
-5. Для остановки:
-```bash
-docker-compose down
-```
-
-### Вариант 2: Локальный запуск (для разработки)
-
-#### Требования:
-- Python 3.11+
-- Node.js 18+
-- npm или yarn
-
-#### Backend:
-
-1. Перейдите в директорию backend:
-```bash
-cd backend
-```
-
-2. Установите зависимости:
-```bash
-pip install -r requirements.txt
-```
-
-3. Перейдите в директорию проекта Django:
-```bash
-cd digital_product_maturity_project
-```
-
-4. Выполните миграции:
-```bash
-python manage.py migrate
-```
-
-5. Создайте суперпользователя:
-```bash
-python manage.py createsuperuser
-```
-
-6. Запустите сервер:
-```bash
-python manage.py runserver
-```
-
-Backend будет доступен по адресу: http://127.0.0.1:8000/
-
-#### Frontend:
-
-1. Откройте новый терминал и перейдите в директорию frontend:
-```bash
-cd frontend
-```
-
-2. Установите зависимости:
-```bash
-npm install
-```
-
-3. Запустите development сервер:
-```bash
-npm start
-```
-
-Frontend будет доступен по адресу: http://localhost:3000/
-
-## Структура проекта
+## 📁 Структура проекта
 
 ```
 digital_product_maturity_system/
 ├── backend/
 │   ├── digital_product_maturity_project/
 │   │   ├── digital_product_maturity/
-│   │   │   ├── core/            # Основное приложение
-│   │   │   │   ├── models.py    # Модели данных
-│   │   │   │   ├── views.py     # API endpoints
+│   │   │   ├── core/           # Основное приложение
+│   │   │   │   ├── models.py   # Модели данных
+│   │   │   │   ├── views.py    # API endpoints
 │   │   │   │   ├── serializers.py
 │   │   │   │   └── urls.py
-│   │   │   ├── settings.py      # Настройки Django
-│   │   │   └── urls.py
-│   │   └── manage.py
+│   │   │   └── settings.py
+│   │   ├── manage.py
+│   │   ├── create_superuser.py
+│   │   └── populate_db.py
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
-│   │   ├── pages/               # Страницы приложения
-│   │   ├── components/          # React компоненты
-│   │   └── App.js
+│   │   ├── pages/              # Страницы приложения
+│   │   │   ├── ProductList.js
+│   │   │   ├── DomainList.js
+│   │   │   ├── EvaluationInput.js
+│   │   │   ├── EvaluationResults.js
+│   │   │   └── ...
+│   │   ├── App.js
+│   │   └── App.css
 │   ├── package.json
 │   └── Dockerfile
 ├── docker-compose.yml
 └── README.md
 ```
 
-## API Endpoints
+## 📊 Модели данных
 
-### Продукты
-- `GET/POST /api/products/` - Список/создание продуктов
-- `GET/PUT/DELETE /api/products/{id}/` - Детали/обновление/удаление продукта
+### Product (Цифровой продукт)
+- name, description, department_owner, product_link, launch_date, is_archived
 
-### Домены оценки
-- `GET/POST /api/domains/` - Список/создание доменов
-- `GET/PUT/DELETE /api/domains/{id}/` - Детали/обновление/удаление домена
+### Domain (Домен оценки)
+- name, description, weight (вес в общем индексе)
 
-### Критерии
-- `GET/POST /api/criteria/` - Список/создание критериев
-- `GET/PUT/DELETE /api/criteria/{id}/` - Детали/обновление/удаление критерия
+### Criterion (Критерий)
+- name, description, weight, domain (FK)
 
-### Оценочные сессии
-- `GET/POST /api/evaluation-sessions/` - Список/создание сессий
-- `GET /api/evaluation-sessions/{id}/get_overall_maturity_index/` - Общий индекс зрелости
-- `GET /api/evaluation-sessions/{id}/get_domain_scores/` - Оценки по доменам
-- `GET /api/evaluation-sessions/{id}/generate_maturity_passport/` - Генерация паспорта зрелости (PDF)
+### EvaluationSession (Сессия оценки)
+- product (FK), status, start_date, end_date, created_by
 
-### Отчеты
-- `GET /api/portfolio-report/` - Сводный отчет по портфелю (PDF)
+### AssignedCriterion (Назначенный критерий)
+- evaluation_session (FK), criterion (FK), assigned_to, is_verified
 
-### Пользователи и роли
-- `GET/POST /api/users/` - Управление пользователями
-- `GET/POST /api/roles/` - Управление ролями
-- `GET/POST /api/profiles/` - Управление профилями
+### EvaluationAnswer (Ответ на оценку)
+- assigned_criterion (FK), score_value (1-10), metric_value, comment
 
-## Роли пользователей
+## 🔌 API Endpoints
 
-- **Администратор системы** - Полный доступ ко всем функциям
-- **Эксперт/Аудитор** - Проведение оценок и верификация
-- **Владелец продукта** - Управление продуктом и ввод данных
-- **Наблюдатель** - Просмотр данных (только чтение)
+| Метод | URL | Описание |
+|-------|-----|----------|
+| GET/POST | `/api/products/` | Список/создание продуктов |
+| GET/PUT/DELETE | `/api/products/{id}/` | Операции с продуктом |
+| GET/POST | `/api/domains/` | Список/создание доменов |
+| GET/POST | `/api/criteria/` | Список/создание критериев |
+| GET/POST | `/api/evaluation-sessions/` | Сессии оценки |
+| GET | `/api/evaluation-sessions/{id}/get_overall_maturity_index/` | Индекс зрелости |
+| GET | `/api/evaluation-sessions/{id}/get_domain_scores/` | Оценки по доменам |
+| GET | `/api/evaluation-sessions/{id}/generate_maturity_passport/` | PDF паспорт |
+| GET/POST | `/api/assigned-criteria/` | Назначенные критерии |
+| GET/POST | `/api/evaluation-answers/` | Ответы на оценку |
 
-## Безопасность
+## 📈 Расчёт индекса зрелости
 
-- Аутентификация пользователей
-- Хэширование паролей
-- HTTPS (в продакшене)
-- CORS настройки
-- Защита от OWASP Top 10
+```
+Индекс домена = Σ(оценка_критерия × вес_критерия) / Σ(веса_критериев)
 
-## Лицензия
+Общий индекс = Σ(индекс_домена × вес_домена) / Σ(веса_доменов)
+```
 
-Proprietary - все права защищены.
+**Уровни зрелости:**
+- 🌟 **Превосходный** (8-10)
+- ⭐ **Высокий** (6-8)
+- 💫 **Средний** (4-6)
+- ⚠️ **Низкий** (2-4)
+- ❌ **Критический** (0-2)
 
-## Контакты
+## 📄 Лицензия
 
-Для вопросов и поддержки обращайтесь к администратору системы.
+MIT License
 
+## 👨‍💻 Автор
+
+Система разработана для оценки зрелости цифровых продуктов региона.
