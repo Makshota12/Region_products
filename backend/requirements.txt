@@ -1,0 +1,11 @@
+Django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+djangorestframework-simplejwt==5.5.1
+django-allauth==65.13.1
+dj-rest-auth==7.0.1
+cryptography==46.0.3
+reportlab==4.0.7
+psycopg2-binary==2.9.9
+pillow==10.1.0
+
