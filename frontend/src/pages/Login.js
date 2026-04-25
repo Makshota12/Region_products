@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,8 @@ function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   const handleChange = (e) => {
     setFormData({
@@ -38,6 +40,69 @@ function Login() {
       setLoading(false);
     }
   };
+
+  const handleGoogleCredential = useCallback(async (response) => {
+    if (!response?.credential) {
+      setError('Не удалось получить токен Google');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const apiResponse = await axios.post('/api/auth/google/', {
+        id_token: response.credential
+      });
+
+      localStorage.setItem('token', apiResponse.data.token);
+      localStorage.setItem('username', apiResponse.data.username);
+      alert(`✅ Добро пожаловать, ${apiResponse.data.username}!`);
+      navigate('/profile');
+    } catch (err) {
+      setError('Не удалось войти через Google. Проверьте настройки OAuth.');
+      console.error('Google login error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleCredential
+      });
+
+      const googleButtonContainer = document.getElementById('google-signin-button');
+      if (googleButtonContainer) {
+        googleButtonContainer.innerHTML = '';
+        window.google.accounts.id.renderButton(googleButtonContainer, {
+          theme: 'outline',
+          size: 'large',
+          width: '320',
+          text: 'continue_with'
+        });
+      }
+      setGoogleReady(true);
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, [googleClientId, handleGoogleCredential]);
 
 
   return (
@@ -80,8 +145,10 @@ function Login() {
                 type="button"
                 className="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
               >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+                {showPassword ? '🙈' : '👁'}
               </button>
             </div>
           </div>
@@ -90,6 +157,17 @@ function Login() {
             {loading ? '⏳ Вход...' : '🔓 Войти'}
           </button>
         </form>
+
+        <div style={{ marginTop: '16px', textAlign: 'center' }}>
+          <p style={{ marginBottom: '8px' }}>или</p>
+          {!googleClientId && (
+            <div className="error" style={{ marginBottom: '8px' }}>
+              Укажите REACT_APP_GOOGLE_CLIENT_ID для входа через Google
+            </div>
+          )}
+          <div id="google-signin-button" />
+          {googleClientId && !googleReady && <p>Подключение Google входа...</p>}
+        </div>
 
         <div className="auth-footer">
           <p>

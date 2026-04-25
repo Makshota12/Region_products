@@ -147,70 +147,143 @@
 ### ER-диаграмма (Entity Relationship)
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           БАЗА ДАННЫХ                                       │
-└─────────────────────────────────────────────────────────────────────────────┘
+Product (1) --------------------< (N) EvaluationSession >-------------------- (1) User [created_by, SET_NULL]
+  id PK                               id PK                                         id PK
+  name                                product_id FK -> Product.id                  username, email, ...
+  description                         created_by_id FK -> User.id (nullable)
+  department_owner                    start_date, end_date, status
+  product_link
+  launch_date
+  is_archived
 
-┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│     Product     │       │     Domain      │       │    Criterion    │
-├─────────────────┤       ├─────────────────┤       ├─────────────────┤
-│ PK id           │       │ PK id           │       │ PK id           │
-│    name         │       │    name         │◄──────│ FK domain_id    │
-│    description  │       │    description  │       │    name         │
-│    dept_owner   │       │    weight       │       │    description  │
-│    product_link │       └─────────────────┘       │    weight       │
-│    launch_date  │                                 └────────┬────────┘
-│    is_archived  │                                          │
-└────────┬────────┘                                          │
-         │                                                   │
-         │                                          ┌────────▼────────┐
-         │                                          │   RatingScale   │
-         │                                          ├─────────────────┤
-         │                                          │ PK id           │
-         │                                          │ FK criterion_id │
-         │                                          │    score (1-10) │
-         │                                          │    description  │
-         │                                          └─────────────────┘
-         │
-         │              ┌─────────────────┐
-         │              │EvaluationSession│
-         │              ├─────────────────┤
-         └──────────────│ PK id           │
-                        │ FK product_id   │
-                        │ FK created_by   │──────────┐
-                        │    start_date   │          │
-                        │    end_date     │          │
-                        │    status       │          │
-                        └────────┬────────┘          │
-                                 │                   │
-                        ┌────────▼────────┐          │
-                        │AssignedCriterion│          │
-                        ├─────────────────┤          │
-                        │ PK id           │          │
-                        │ FK session_id   │          │     ┌─────────────────┐
-                        │ FK criterion_id │          │     │      User       │
-                        │ FK assigned_to  │──────────┼────▶├─────────────────┤
-                        │    is_verified  │          │     │ PK id           │
-                        └────────┬────────┘          │     │    username     │
-                                 │                   │     │    email        │
-                        ┌────────▼────────┐          │     │    password     │
-                        │EvaluationAnswer │          │     └────────┬────────┘
-                        ├─────────────────┤          │              │
-                        │ PK id           │          │     ┌────────▼────────┐
-                        │ FK assigned_id  │          │     │     Profile     │
-                        │    score_value  │          │     ├─────────────────┤
-                        │    metric_value │          │     │ PK id           │
-                        │    file_evidence│          └────▶│ FK user_id      │
-                        │    comment      │                │ FK role_id      │
-                        │    submitted_at │                └────────┬────────┘
-                        └─────────────────┘                         │
-                                                           ┌────────▼────────┐
-                                                           │      Role       │
-                                                           ├─────────────────┤
-                                                           │ PK id           │
-                                                           │    name         │
-                                                           └─────────────────┘
+Domain (1) ---------------------< (N) Criterion (1) ------------------------< (N) RatingScale
+  id PK                               id PK                                       id PK
+  name                                domain_id FK -> Domain.id                   criterion_id FK -> Criterion.id
+  description                         name, description, weight                   score (1..10), description
+  weight
+
+EvaluationSession (1) ----------< (N) AssignedCriterion >------------------- (1) Criterion
+                                    id PK                                         id PK
+                                    evaluation_session_id FK -> EvaluationSession.id
+                                    criterion_id FK -> Criterion.id
+                                    assigned_to_id FK -> User.id (nullable, SET_NULL)
+                                    is_verified
+                                    UNIQUE(evaluation_session_id, criterion_id)
+
+AssignedCriterion (1) ---------- (1) EvaluationAnswer
+                                   id PK
+                                   assigned_criterion_id FK UNIQUE -> AssignedCriterion.id
+                                   score_value, metric_value, file_evidence, comment, submitted_at
+
+User (1) ------------------------ (1) Profile >------------------------------ (N) Role
+  id PK                              id PK                                        id PK
+  username, email, ...               user_id FK UNIQUE -> User.id                 name (admin|expert|owner|observer)
+                                    role_id FK -> Role.id (nullable, SET_NULL)
 ```
+
+### ER-диаграмма (Mermaid)
+
+```mermaid
+erDiagram
+    PRODUCT ||--o{ EVALUATION_SESSION : has
+    DOMAIN ||--o{ CRITERION : contains
+    CRITERION ||--o{ RATING_SCALE : defines
+    EVALUATION_SESSION ||--o{ ASSIGNED_CRITERION : includes
+    CRITERION ||--o{ ASSIGNED_CRITERION : assigned_as
+    ASSIGNED_CRITERION ||--|| EVALUATION_ANSWER : answered_by
+    USER ||--o{ EVALUATION_SESSION : creates
+    USER ||--o{ ASSIGNED_CRITERION : assigned_to
+    USER ||--|| PROFILE : has
+    ROLE ||--o{ PROFILE : assigned_to
+
+    PRODUCT {
+        int id PK
+        string name
+        text description
+        string department_owner
+        string product_link
+        date launch_date
+        bool is_archived
+    }
+
+    DOMAIN {
+        int id PK
+        string name
+        text description
+        decimal weight
+    }
+
+    CRITERION {
+        int id PK
+        int domain_id FK
+        string name
+        text description
+        decimal weight
+    }
+
+    RATING_SCALE {
+        int id PK
+        int criterion_id FK
+        int score
+        text description
+    }
+
+    EVALUATION_SESSION {
+        int id PK
+        int product_id FK
+        int created_by_id FK
+        date start_date
+        date end_date
+        string status
+    }
+
+    ASSIGNED_CRITERION {
+        int id PK
+        int evaluation_session_id FK
+        int criterion_id FK
+        int assigned_to_id FK
+        bool is_verified
+    }
+
+    EVALUATION_ANSWER {
+        int id PK
+        int assigned_criterion_id FK
+        int score_value
+        decimal metric_value
+        string file_evidence
+        text comment
+        datetime submitted_at
+    }
+
+    USER {
+        int id PK
+        string username
+        string email
+    }
+
+    PROFILE {
+        int id PK
+        int user_id FK
+        int role_id FK
+    }
+
+    ROLE {
+        int id PK
+        string name
+    }
+```
+
+### Кардинальности и правила связей
+
+- `Product 1:N EvaluationSession` — у продукта может быть много сессий оценки.
+- `Domain 1:N Criterion` — каждый критерий принадлежит ровно одному домену.
+- `Criterion 1:N RatingScale` — у критерия несколько уровней шкалы.
+- `EvaluationSession N:M Criterion` реализовано через `AssignedCriterion`.
+- `AssignedCriterion 1:1 EvaluationAnswer` — на один назначенный критерий максимум один ответ.
+- `User 1:N EvaluationSession` через `created_by` (`SET_NULL` при удалении пользователя).
+- `User 1:N AssignedCriterion` через `assigned_to` (`SET_NULL` при удалении пользователя).
+- `User 1:1 Profile` — профиль создается для каждого пользователя.
+- `Role 1:N Profile` — роль может быть назначена многим пользователям; роль в профиле может быть `NULL`.
 
 ### Описание таблиц
 

@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from rest_framework.permissions import BasePermission, SAFE_METHODS, IsAuthenticated
 from django.contrib.auth.models import User
 from .models import Product, Domain, Criterion, RatingScale, EvaluationSession, AssignedCriterion, EvaluationAnswer, Role, Profile
 from .serializers import (ProductSerializer, DomainSerializer, CriterionSerializer, RatingScaleSerializer, 
@@ -52,25 +53,56 @@ def register_fonts():
 # Регистрируем шрифты при загрузке модуля
 register_fonts()
 
+class IsAdminRole(BasePermission):
+    """Доступ только для админа системы."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_staff or user.is_superuser:
+            return True
+        return hasattr(user, 'profile') and user.profile.role and user.profile.role.name == 'admin'
+
+
+class IsAdminRoleOrReadOnly(BasePermission):
+    """Чтение для авторизованных, изменение только для admin."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if request.method in SAFE_METHODS:
+            return True
+        if user.is_staff or user.is_superuser:
+            return True
+        return hasattr(user, 'profile') and user.profile.role and user.profile.role.name == 'admin'
+
+
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [IsAdminRoleOrReadOnly]
 
 class DomainViewSet(viewsets.ModelViewSet):
     queryset = Domain.objects.all()
     serializer_class = DomainSerializer
+    permission_classes = [IsAdminRoleOrReadOnly]
 
 class CriterionViewSet(viewsets.ModelViewSet):
     queryset = Criterion.objects.all()
     serializer_class = CriterionSerializer
+    permission_classes = [IsAdminRoleOrReadOnly]
 
 class RatingScaleViewSet(viewsets.ModelViewSet):
     queryset = RatingScale.objects.all()
     serializer_class = RatingScaleSerializer
+    permission_classes = [IsAdminRoleOrReadOnly]
 
 class EvaluationSessionViewSet(viewsets.ModelViewSet):
     queryset = EvaluationSession.objects.all()
     serializer_class = EvaluationSessionSerializer
+    permission_classes = [IsAdminRoleOrReadOnly]
 
     def create(self, request, *args, **kwargs):
         """
@@ -107,6 +139,10 @@ class EvaluationSessionViewSet(viewsets.ModelViewSet):
         
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        # Для безопасности фиксируем автора сессии текущим пользователем
+        serializer.save(created_by=self.request.user)
 
     @action(detail=True, methods=['get'])
     def get_overall_maturity_index(self, request, pk=None):
@@ -364,6 +400,7 @@ class EvaluationSessionViewSet(viewsets.ModelViewSet):
 
 class AssignedCriterionViewSet(viewsets.ModelViewSet):
     queryset = AssignedCriterion.objects.select_related('criterion', 'criterion__domain').prefetch_related('answer')
+    permission_classes = [IsAdminRoleOrReadOnly]
     
     def get_serializer_class(self):
         # Используем разные сериализаторы для чтения и записи
@@ -383,20 +420,25 @@ class AssignedCriterionViewSet(viewsets.ModelViewSet):
 class EvaluationAnswerViewSet(viewsets.ModelViewSet):
     queryset = EvaluationAnswer.objects.all()
     serializer_class = EvaluationAnswerSerializer
+    permission_classes = [IsAdminRoleOrReadOnly]
 
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
+    permission_classes = [IsAdminRole]
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
+    permission_classes = [IsAdminRole]
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    permission_classes = [IsAdminRole]
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def generate_portfolio_report(request):
     """Генерация сводного отчета по портфелю продуктов (на русском языке)"""
     response = HttpResponse(content_type='application/pdf')
