@@ -1,7 +1,7 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
 from .views import ProductViewSet, DomainViewSet, CriterionViewSet, RatingScaleViewSet, EvaluationSessionViewSet, AssignedCriterionViewSet, EvaluationAnswerViewSet, RoleViewSet, ProfileViewSet, UserViewSet, generate_portfolio_report
-from .auth_views import register_user, login_user, logout_user, current_user, google_login
+from .auth_views import register_user, login_user, logout_user, current_user, google_login, update_current_user
 
 router = DefaultRouter()
 router.register(r'products', ProductViewSet)
@@ -24,6 +24,7 @@ urlpatterns += [
     path('auth/google/', google_login, name='google-login'),
     path('auth/logout/', logout_user, name='logout'),
     path('auth/user/', current_user, name='current-user'),
+    path('auth/user/update/', update_current_user, name='update-current-user'),
     # Django-allauth endpoints (для Google и Telegram OAuth)
     path('auth/', include('dj_rest_auth.urls')),
     path('auth/registration/', include('dj_rest_auth.registration.urls')),

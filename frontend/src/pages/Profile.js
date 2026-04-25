@@ -6,11 +6,14 @@ function Profile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
+  const [avatarFile, setAvatarFile] = useState(null);
 
   useEffect(() => {
     // Проверяем, есть ли токен
     const token = localStorage.getItem('token');
-    const username = localStorage.getItem('username');
 
     if (!token) {
       alert('❌ Вы не авторизованы');
@@ -26,6 +29,7 @@ function Profile() {
     })
       .then(response => {
         setUser(response.data);
+        setUsernameInput(response.data.username || '');
         // Обновляем username в localStorage с актуальными данными сервера
         localStorage.setItem('username', response.data.username);
         setLoading(false);
@@ -50,6 +54,35 @@ function Profile() {
       localStorage.removeItem('username');
       alert('✅ Вы успешно вышли из системы');
       navigate('/login');
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append('username', usernameInput.trim());
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
+      }
+
+      const response = await axios.patch('/api/auth/user/update/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      setUser(response.data);
+      localStorage.setItem('username', response.data.username);
+      setAvatarFile(null);
+      setEditing(false);
+      alert('✅ Профиль обновлен');
+    } catch (error) {
+      console.error('Ошибка при обновлении профиля:', error);
+      alert(error.response?.data?.error || '❌ Не удалось обновить профиль');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -86,12 +119,67 @@ function Profile() {
       <div className="profile-card">
         <div className="profile-header">
           <div className="profile-avatar">
-            {getRoleIcon(user.role)}
+            {user.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt="Аватар профиля"
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+              />
+            ) : (
+              getRoleIcon(user.role)
+            )}
           </div>
           <div className="profile-title">
             <h2>{user.username}</h2>
             <span className="profile-role">{user.role || 'Роль не назначена'}</span>
           </div>
+        </div>
+
+        <div className="profile-section">
+          <h3>✏️ Редактирование профиля</h3>
+          {!editing ? (
+            <button onClick={() => setEditing(true)}>Изменить имя и фото</button>
+          ) : (
+            <form onSubmit={handleSaveProfile}>
+              <div className="info-grid">
+                <div className="info-item">
+                  <strong>Новое имя пользователя</strong>
+                  <input
+                    type="text"
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    required
+                    maxLength={150}
+                    placeholder="Введите имя пользователя"
+                  />
+                </div>
+                <div className="info-item">
+                  <strong>Фото профиля</strong>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                <button type="submit" disabled={saving}>
+                  {saving ? 'Сохранение...' : '💾 Сохранить'}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={() => {
+                    setEditing(false);
+                    setUsernameInput(user.username || '');
+                    setAvatarFile(null);
+                  }}
+                >
+                  Отмена
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
         <div className="profile-info">

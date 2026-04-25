@@ -175,7 +175,14 @@ class EvaluationAnswer(models.Model):
     assigned_criterion = models.OneToOneField(AssignedCriterion, on_delete=models.CASCADE, related_name='answer', verbose_name="Назначенный критерий")
     score_value = models.IntegerField(blank=True, null=True, verbose_name="Балл по шкале",
                                       validators=[MinValueValidator(1), MaxValueValidator(10)])
-    metric_value = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="Числовое значение метрики")
+    metric_value = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        verbose_name="Числовое значение метрики",
+        validators=[MinValueValidator(0), MaxValueValidator(100)]
+    )
     file_evidence = models.FileField(upload_to='evaluation_evidence/', blank=True, null=True, verbose_name="Файл-доказательство")
     comment = models.TextField(blank=True, null=True, verbose_name="Комментарий")
     submitted_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата отправки")
@@ -208,6 +215,7 @@ class Role(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, verbose_name="Роль")
+    avatar = models.ImageField(upload_to='profile_avatars/', blank=True, null=True, verbose_name="Фото профиля")
 
     class Meta:
         verbose_name = "Профиль пользователя"

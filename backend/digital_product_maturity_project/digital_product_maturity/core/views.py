@@ -79,6 +79,26 @@ class IsAdminRoleOrReadOnly(BasePermission):
         return hasattr(user, 'profile') and user.profile.role and user.profile.role.name == 'admin'
 
 
+class IsEvaluatorRoleOrReadOnly(BasePermission):
+    """Чтение для авторизованных, оценка для ролей evaluator."""
+
+    ALLOWED_ROLES = {'admin', 'expert', 'owner', 'observer'}
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if request.method in SAFE_METHODS:
+            return True
+        if user.is_staff or user.is_superuser:
+            return True
+        return (
+            hasattr(user, 'profile')
+            and user.profile.role
+            and user.profile.role.name in self.ALLOWED_ROLES
+        )
+
+
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -102,7 +122,7 @@ class RatingScaleViewSet(viewsets.ModelViewSet):
 class EvaluationSessionViewSet(viewsets.ModelViewSet):
     queryset = EvaluationSession.objects.all()
     serializer_class = EvaluationSessionSerializer
-    permission_classes = [IsAdminRoleOrReadOnly]
+    permission_classes = [IsEvaluatorRoleOrReadOnly]
 
     def create(self, request, *args, **kwargs):
         """
@@ -420,7 +440,7 @@ class AssignedCriterionViewSet(viewsets.ModelViewSet):
 class EvaluationAnswerViewSet(viewsets.ModelViewSet):
     queryset = EvaluationAnswer.objects.all()
     serializer_class = EvaluationAnswerSerializer
-    permission_classes = [IsAdminRoleOrReadOnly]
+    permission_classes = [IsEvaluatorRoleOrReadOnly]
 
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all()

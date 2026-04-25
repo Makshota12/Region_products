@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
@@ -10,6 +10,7 @@ import os
 import re
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
+from .models import Profile
 
 
 @api_view(['POST'])
@@ -121,15 +122,53 @@ def current_user(request):
     try:
         profile = user.profile
         role = profile.role.get_name_display() if profile.role else 'Не назначена'
+        avatar_url = request.build_absolute_uri(profile.avatar.url) if profile.avatar else None
     except:
         role = 'Не назначена'
+        avatar_url = None
 
     return Response({
         'id': user.id,
         'username': user.username,
         'email': user.email,
         'role': role,
-        'is_staff': user.is_staff
+        'is_staff': user.is_staff,
+        'avatar_url': avatar_url
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_current_user(request):
+    """Обновление профиля текущего пользователя (username + avatar)."""
+    user = request.user
+    profile, _ = Profile.objects.get_or_create(user=user)
+
+    new_username = request.data.get('username', '').strip()
+    if new_username and new_username != user.username:
+        if User.objects.filter(username=new_username).exclude(id=user.id).exists():
+            return Response(
+                {'error': 'Пользователь с таким именем уже существует'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        user.username = new_username
+        user.save(update_fields=['username'])
+
+    if 'avatar' in request.FILES:
+        profile.avatar = request.FILES['avatar']
+        profile.save(update_fields=['avatar'])
+
+    role = profile.role.get_name_display() if profile.role else 'Не назначена'
+    avatar_url = request.build_absolute_uri(profile.avatar.url) if profile.avatar else None
+
+    return Response({
+        'message': 'Профиль успешно обновлен',
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'role': role,
+        'is_staff': user.is_staff,
+        'avatar_url': avatar_url
     }, status=status.HTTP_200_OK)
 
 
