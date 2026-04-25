@@ -140,6 +140,142 @@
      └──────────────────────────────────────────┘
 ```
 
+### Архитектура приложения (Mermaid)
+
+```mermaid
+graph TB
+    subgraph Browser["🌐 Браузер (Клиент)"]
+        UI[React SPA]
+        Router[React Router]
+        HTTP[Axios HTTP Client]
+        UI --> Router
+        Router --> HTTP
+    end
+    
+    subgraph Backend["🖥️ Django Backend"]
+        URLConf[URL Router]
+        Views[ViewSets & API Views]
+        Serializers[DRF Serializers]
+        Models[Django Models]
+        Auth[JWT Auth + Google OAuth]
+        Permissions[Role-Based Permissions]
+        ORM[Django ORM]
+        PDF[ReportLab PDF Generator]
+        
+        URLConf --> Views
+        Views --> Serializers
+        Views --> Auth
+        Views --> Permissions
+        Serializers --> Models
+        Models --> ORM
+        Views --> PDF
+    end
+    
+    subgraph Storage["💾 Хранилище"]
+        DB[(SQLite/PostgreSQL)]
+        Media[Media Files]
+    end
+    
+    HTTP -->|REST API<br/>JSON| URLConf
+    Views -->|Query/Save| ORM
+    ORM --> DB
+    Views -->|Upload/Retrieve| Media
+    Views -.->|JSON Response| HTTP
+    
+    style Browser fill:#e3f2fd
+    style Backend fill:#fff3e0
+    style Storage fill:#f3e5f5
+    style UI fill:#667eea,color:#fff
+    style Views fill:#764ba2,color:#fff
+    style DB fill:#27ae60,color:#fff
+```
+
+### Поток запроса (Sequence Diagram)
+
+```mermaid
+sequenceDiagram
+    participant U as 👤 Пользователь
+    participant R as React App
+    participant A as Axios
+    participant D as Django API
+    participant DB as База данных
+    
+    U->>R: Открывает страницу /products
+    R->>A: GET /api/products/
+    A->>A: Добавляет JWT токен<br/>из localStorage
+    A->>D: HTTP Request + Authorization
+    D->>D: Проверка JWT
+    D->>D: Проверка прав доступа
+    D->>DB: SELECT * FROM products
+    DB-->>D: Данные продуктов
+    D->>D: Сериализация (JSON)
+    D-->>A: HTTP 200 + JSON
+    A-->>R: Response data
+    R->>R: Рендер компонента
+    R-->>U: Отображение списка
+    
+    U->>R: Нажимает "Создать продукт"
+    R->>A: POST /api/products/
+    A->>D: HTTP Request + JWT + данные
+    D->>D: Проверка роли (IsAdminRoleOrReadOnly)
+    alt Пользователь - Admin
+        D->>DB: INSERT INTO products
+        DB-->>D: Success
+        D-->>A: HTTP 201 Created
+        A-->>R: Success
+        R-->>U: ✅ Продукт создан
+    else Пользователь - Observer
+        D-->>A: HTTP 403 Forbidden
+        A-->>R: Error
+        R-->>U: ❌ Доступ запрещён
+    end
+```
+
+### Архитектура компонентов (Mermaid)
+
+```mermaid
+graph LR
+    subgraph Frontend["Frontend (React)"]
+        direction TB
+        Pages[Pages]
+        Components[Components]
+        Services[Services]
+        
+        Pages --> |ProductList<br/>DomainList<br/>EvaluationInput<br/>Profile<br/>Login| Components
+        Components --> |App.js<br/>App.css<br/>Router| Services
+        Services --> |Axios<br/>setupProxy| API
+    end
+    
+    subgraph Backend["Backend (Django)"]
+        direction TB
+        Core[Core App]
+        Settings[Settings]
+        Utils[Utils]
+        
+        Core --> |models.py<br/>views.py<br/>serializers.py<br/>auth_views.py<br/>admin.py| Settings
+        Settings --> |settings.py<br/>urls.py<br/>wsgi.py| Utils
+        Utils --> |create_superuser<br/>populate_db<br/>check_data| DB
+    end
+    
+    subgraph Data["Data Layer"]
+        DB[(Database)]
+        Media[Media Storage]
+    end
+    
+    API[REST API<br/>JSON]
+    
+    Frontend -->|HTTP/HTTPS| API
+    API -->|DRF ViewSets| Backend
+    Backend -->|ORM| Data
+    
+    style Frontend fill:#e3f2fd
+    style Backend fill:#fff3e0
+    style Data fill:#f3e5f5
+    style Pages fill:#667eea,color:#fff
+    style Core fill:#764ba2,color:#fff
+    style DB fill:#27ae60,color:#fff
+```
+
 ---
 
 ## 🗄 Структура базы данных
