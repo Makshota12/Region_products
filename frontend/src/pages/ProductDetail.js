@@ -68,7 +68,7 @@ function ProductDetail() {
   return (
     <div className="product-detail">
       <div style={{ marginBottom: '20px' }}>
-        <Link to="/" style={{ color: '#667eea', textDecoration: 'none' }}>← Назад к списку</Link>
+        <Link to="/" style={{ color: '#1f2937', textDecoration: 'none' }}>← Назад к списку</Link>
       </div>
 
       <div className="product-header">

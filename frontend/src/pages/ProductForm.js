@@ -61,7 +61,7 @@ function ProductForm() {
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
-        <Link to="/" style={{ color: '#667eea', textDecoration: 'none' }}>
+        <Link to="/" style={{ color: '#1f2937', textDecoration: 'none' }}>
           ← Назад к списку продуктов
         </Link>
       </div>

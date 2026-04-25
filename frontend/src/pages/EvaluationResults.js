@@ -162,8 +162,29 @@ function EvaluationResults() {
     }
   };
 
-  const handleDownloadPDF = () => {
-    window.open(`/api/evaluation-sessions/${sessionId}/generate_maturity_passport/`, '_blank');
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await axios.get(
+        `/api/evaluation-sessions/${sessionId}/generate_maturity_passport/`,
+        { responseType: 'blob' }
+      );
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `passport_session_${sessionId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        alert('Нужно войти в систему, чтобы скачать паспорт зрелости.');
+      } else {
+        console.error('Ошибка при скачивании паспорта зрелости:', error);
+        alert('Не удалось скачать PDF. Попробуйте ещё раз.');
+      }
+    }
   };
 
   if (loading) {
@@ -177,7 +198,7 @@ function EvaluationResults() {
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
-        <Link to="/evaluation-sessions" style={{ color: '#667eea', textDecoration: 'none' }}>
+        <Link to="/evaluation-sessions" style={{ color: '#1f2937', textDecoration: 'none' }}>
           ← Назад к сессиям
         </Link>
       </div>

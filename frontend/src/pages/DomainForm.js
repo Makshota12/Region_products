@@ -57,7 +57,7 @@ function DomainForm() {
   return (
     <div>
       <div style={{ marginBottom: '20px' }}>
-        <Link to="/domains" style={{ color: '#667eea', textDecoration: 'none' }}>
+        <Link to="/domains" style={{ color: '#1f2937', textDecoration: 'none' }}>
           ← Назад к доменам
         </Link>
       </div>

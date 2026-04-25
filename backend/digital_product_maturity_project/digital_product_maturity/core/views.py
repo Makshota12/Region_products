@@ -12,10 +12,136 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch, cm
 from reportlab.lib.colors import HexColor
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from django.http import HttpResponse
 import os
+from io import BytesIO
+
+import matplotlib
+matplotlib.use('Agg')  # серверный, неинтерактивный backend
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def _render_radar_chart(domain_scores: dict) -> BytesIO:
+    """Лепестковая (радарная) диаграмма по доменам. Возвращает PNG в BytesIO."""
+    if not domain_scores:
+        return None
+
+    labels = list(domain_scores.keys())
+    values = [float(v) if v is not None else 0.0 for v in domain_scores.values()]
+
+    angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
+    values_closed = values + values[:1]
+    angles_closed = angles + angles[:1]
+
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+    ax.fill(angles_closed, values_closed, color='#667eea', alpha=0.25)
+    ax.plot(angles_closed, values_closed, color='#667eea', linewidth=2)
+    ax.scatter(angles, values, color='#764ba2', s=40, zorder=3)
+
+    ax.set_theta_offset(np.pi / 2)
+    ax.set_theta_direction(-1)
+    ax.set_xticks(angles)
+    ax.set_xticklabels(labels, fontsize=9)
+    ax.set_ylim(0, 10)
+    ax.set_yticks([2, 4, 6, 8, 10])
+    ax.set_yticklabels(['2', '4', '6', '8', '10'], fontsize=8, color='#888')
+    ax.grid(color='#e2e2e2')
+    ax.set_title('Оценка по доменам', fontsize=14, fontweight='bold', pad=20, color='#2d3436')
+
+    buf = BytesIO()
+    fig.tight_layout()
+    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white')
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
+
+def _render_bar_chart(domain_scores: dict) -> BytesIO:
+    """Столбчатая диаграмма по доменам. Возвращает PNG в BytesIO."""
+    if not domain_scores:
+        return None
+
+    labels = list(domain_scores.keys())
+    values = [float(v) if v is not None else 0.0 for v in domain_scores.values()]
+
+    def _color_for(v):
+        if v >= 8:
+            return '#27ae60'
+        if v >= 6:
+            return '#3498db'
+        if v >= 4:
+            return '#f39c12'
+        if v >= 2:
+            return '#e74c3c'
+        return '#c0392b'
+
+    colors = [_color_for(v) for v in values]
+
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    bars = ax.bar(labels, values, color=colors, edgecolor='white', linewidth=1.5)
+    ax.set_ylim(0, 10)
+    ax.set_ylabel('Оценка (0–10)', fontsize=10, color='#2d3436')
+    ax.set_title('Сравнение доменов', fontsize=14, fontweight='bold', color='#2d3436', pad=15)
+    ax.grid(axis='y', color='#e2e2e2', linestyle='--', alpha=0.7)
+    ax.set_axisbelow(True)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_color('#cccccc')
+    ax.spines['bottom'].set_color('#cccccc')
+
+    for bar, value in zip(bars, values):
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width() / 2.0, height + 0.15, f'{value:.2f}',
+                ha='center', va='bottom', fontsize=9, fontweight='bold', color='#2d3436')
+
+    plt.xticks(rotation=15, ha='right', fontsize=9)
+    buf = BytesIO()
+    fig.tight_layout()
+    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white')
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
+
+def _render_gauge_chart(overall_index: float) -> BytesIO:
+    """Кольцевая диаграмма-«пончик» общего индекса зрелости."""
+    overall_index = max(0.0, min(10.0, float(overall_index or 0.0)))
+    remaining = 10.0 - overall_index
+
+    if overall_index >= 8:
+        color = '#27ae60'
+    elif overall_index >= 6:
+        color = '#3498db'
+    elif overall_index >= 4:
+        color = '#f39c12'
+    elif overall_index >= 2:
+        color = '#e74c3c'
+    else:
+        color = '#c0392b'
+
+    fig, ax = plt.subplots(figsize=(4.5, 4.5))
+    ax.pie(
+        [overall_index, remaining],
+        colors=[color, '#ecf0f1'],
+        startangle=90,
+        counterclock=False,
+        wedgeprops=dict(width=0.3, edgecolor='white'),
+    )
+    ax.text(0, 0.05, f'{overall_index:.2f}', ha='center', va='center',
+            fontsize=36, fontweight='bold', color=color)
+    ax.text(0, -0.25, 'из 10', ha='center', va='center', fontsize=12, color='#636e72')
+    ax.set_title('Общий индекс зрелости', fontsize=13, fontweight='bold', color='#2d3436', pad=15)
+
+    buf = BytesIO()
+    fig.tight_layout()
+    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight', facecolor='white')
+    plt.close(fig)
+    buf.seek(0)
+    return buf
 
 # Регистрируем шрифт с поддержкой кириллицы
 def register_fonts():
@@ -53,76 +179,135 @@ def register_fonts():
 # Регистрируем шрифты при загрузке модуля
 register_fonts()
 
+# =====================================================================
+# РОЛЕВАЯ МОДЕЛЬ ДОСТУПА
+# ---------------------------------------------------------------------
+# В системе четыре роли (см. core.models.Role):
+#   • admin    — Администратор системы:  все действия (CRUD по всему).
+#   • expert   — Эксперт/Аудитор:        проводит оценки, не правит каталог.
+#   • owner    — Владелец продукта:      управляет продуктами + оценивает.
+#   • observer — Наблюдатель:            только просмотр (read-only везде).
+#
+# Сводная матрица доступа (W = write, R = read, — = запрет):
+#
+#   Сущность                     admin  expert  owner  observer
+#   --------------------------   -----  ------  -----  --------
+#   Каталог: Domain, Criterion,
+#   RatingScale, AssignedCrit.    W      R       R      R
+#   Product (продукты)            W      R       W      R
+#   EvaluationSession             W      W       W      R
+#   EvaluationAnswer              W      W       W      R
+#   Role / Profile / User         W      —       —      —
+#
+# Все ViewSets ниже привязаны к семантичным пермишенам.
+# =====================================================================
+
+ROLE_ADMIN = 'admin'
+ROLE_EXPERT = 'expert'
+ROLE_OWNER = 'owner'
+ROLE_OBSERVER = 'observer'
+
+
+def _resolve_role(user):
+    """Возвращает строковое имя роли пользователя или None.
+
+    Суперпользователи Django и пользователи с is_staff приравниваются к admin
+    (нужно для доступа админа Django к API без явной роли в Profile).
+    """
+    if not user or not user.is_authenticated:
+        return None
+    if user.is_staff or user.is_superuser:
+        return ROLE_ADMIN
+    profile = getattr(user, 'profile', None)
+    role = getattr(profile, 'role', None) if profile else None
+    return role.name if role else None
+
+
 class IsAdminRole(BasePermission):
-    """Доступ только для админа системы."""
+    """Только администратор системы."""
 
     def has_permission(self, request, view):
-        user = request.user
-        if not user or not user.is_authenticated:
-            return False
-        if user.is_staff or user.is_superuser:
-            return True
-        return hasattr(user, 'profile') and user.profile.role and user.profile.role.name == 'admin'
+        return _resolve_role(request.user) == ROLE_ADMIN
 
 
-class IsAdminRoleOrReadOnly(BasePermission):
-    """Чтение для авторизованных, изменение только для admin."""
+class CatalogPermission(BasePermission):
+    """Каталог (домены, критерии, шкалы, привязки критериев).
 
-    def has_permission(self, request, view):
-        user = request.user
-        if not user or not user.is_authenticated:
-            return False
-        if request.method in SAFE_METHODS:
-            return True
-        if user.is_staff or user.is_superuser:
-            return True
-        return hasattr(user, 'profile') and user.profile.role and user.profile.role.name == 'admin'
-
-
-class IsEvaluatorRoleOrReadOnly(BasePermission):
-    """Чтение для авторизованных, оценка для ролей evaluator."""
-
-    ALLOWED_ROLES = {'admin', 'expert', 'owner', 'observer'}
+    Чтение — для всех аутентифицированных,
+    запись — только администратор.
+    """
 
     def has_permission(self, request, view):
-        user = request.user
-        if not user or not user.is_authenticated:
+        role = _resolve_role(request.user)
+        if role is None:
             return False
         if request.method in SAFE_METHODS:
             return True
-        if user.is_staff or user.is_superuser:
+        return role == ROLE_ADMIN
+
+
+class ProductPermission(BasePermission):
+    """Продукты.
+
+    Чтение — для всех аутентифицированных,
+    запись — администратор или владелец продукта.
+    """
+
+    def has_permission(self, request, view):
+        role = _resolve_role(request.user)
+        if role is None:
+            return False
+        if request.method in SAFE_METHODS:
             return True
-        return (
-            hasattr(user, 'profile')
-            and user.profile.role
-            and user.profile.role.name in self.ALLOWED_ROLES
-        )
+        return role in {ROLE_ADMIN, ROLE_OWNER}
+
+
+class EvaluationPermission(BasePermission):
+    """Сессии оценки и ответы.
+
+    Чтение — для всех аутентифицированных,
+    запись — администратор, эксперт или владелец продукта.
+    Наблюдатель (observer) может только читать.
+    """
+
+    def has_permission(self, request, view):
+        role = _resolve_role(request.user)
+        if role is None:
+            return False
+        if request.method in SAFE_METHODS:
+            return True
+        return role in {ROLE_ADMIN, ROLE_EXPERT, ROLE_OWNER}
+
+
+# --- Обратная совместимость со старыми именами классов (если где-то импортируются) ---
+IsAdminRoleOrReadOnly = CatalogPermission
+IsEvaluatorRoleOrReadOnly = EvaluationPermission
 
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAdminRoleOrReadOnly]
+    permission_classes = [ProductPermission]
 
 class DomainViewSet(viewsets.ModelViewSet):
     queryset = Domain.objects.all()
     serializer_class = DomainSerializer
-    permission_classes = [IsAdminRoleOrReadOnly]
+    permission_classes = [CatalogPermission]
 
 class CriterionViewSet(viewsets.ModelViewSet):
     queryset = Criterion.objects.all()
     serializer_class = CriterionSerializer
-    permission_classes = [IsAdminRoleOrReadOnly]
+    permission_classes = [CatalogPermission]
 
 class RatingScaleViewSet(viewsets.ModelViewSet):
     queryset = RatingScale.objects.all()
     serializer_class = RatingScaleSerializer
-    permission_classes = [IsAdminRoleOrReadOnly]
+    permission_classes = [CatalogPermission]
 
 class EvaluationSessionViewSet(viewsets.ModelViewSet):
     queryset = EvaluationSession.objects.all()
     serializer_class = EvaluationSessionSerializer
-    permission_classes = [IsEvaluatorRoleOrReadOnly]
+    permission_classes = [EvaluationPermission]
 
     def create(self, request, *args, **kwargs):
         """
@@ -333,9 +518,66 @@ class EvaluationSessionViewSet(viewsets.ModelViewSet):
             
             y_pos -= 1.2*cm
         
-        # === СТРАНИЦА 2: ДЕТАЛЬНАЯ ОЦЕНКА ===
+        # === СТРАНИЦА 2: ВИЗУАЛИЗАЦИЯ ОЦЕНОК (ГРАФИКИ) ===
         p.showPage()
-        
+
+        p.setFillColor(primary_color)
+        p.setFont(font_bold, 20)
+        p.drawCentredString(width / 2, height - 2 * cm, "ВИЗУАЛИЗАЦИЯ ОЦЕНОК")
+
+        p.setStrokeColor(primary_color)
+        p.setLineWidth(2)
+        p.line(2 * cm, height - 2.5 * cm, width - 2 * cm, height - 2.5 * cm)
+
+        # Собираем оценки по доменам для графиков
+        domain_scores_map = {}
+        for domain in domains:
+            score = session.get_domain_score(domain.id)
+            if score is not None:
+                domain_scores_map[domain.name] = score
+
+        try:
+            # Кольцевая диаграмма общего индекса (правый верх)
+            gauge_buf = _render_gauge_chart(overall_index)
+            if gauge_buf is not None:
+                p.drawImage(
+                    ImageReader(gauge_buf),
+                    width - 9 * cm, height - 11 * cm,
+                    width=8 * cm, height=8 * cm,
+                    preserveAspectRatio=True, mask='auto'
+                )
+
+            # Радарная диаграмма (левый верх)
+            if domain_scores_map:
+                radar_buf = _render_radar_chart(domain_scores_map)
+                if radar_buf is not None:
+                    p.drawImage(
+                        ImageReader(radar_buf),
+                        1 * cm, height - 11 * cm,
+                        width=8 * cm, height=8 * cm,
+                        preserveAspectRatio=True, mask='auto'
+                    )
+
+            # Столбчатая диаграмма по доменам (нижняя половина страницы)
+            if domain_scores_map:
+                bar_buf = _render_bar_chart(domain_scores_map)
+                if bar_buf is not None:
+                    p.drawImage(
+                        ImageReader(bar_buf),
+                        1.5 * cm, 2.5 * cm,
+                        width=width - 3 * cm, height=12 * cm,
+                        preserveAspectRatio=True, mask='auto'
+                    )
+        except Exception as chart_error:
+            # Если matplotlib что-то сломал — не валим весь PDF
+            p.setFillColor(HexColor('#e74c3c'))
+            p.setFont(font_regular, 11)
+            p.drawCentredString(width / 2, height / 2,
+                                f"Не удалось построить графики: {chart_error}")
+
+        # === СТРАНИЦА 3: ДЕТАЛЬНАЯ ОЦЕНКА ===
+        p.showPage()
+
         p.setFillColor(primary_color)
         p.setFont(font_bold, 20)
         p.drawCentredString(width/2, height - 2*cm, "ДЕТАЛЬНАЯ ОЦЕНКА ПО КРИТЕРИЯМ")
@@ -420,7 +662,7 @@ class EvaluationSessionViewSet(viewsets.ModelViewSet):
 
 class AssignedCriterionViewSet(viewsets.ModelViewSet):
     queryset = AssignedCriterion.objects.select_related('criterion', 'criterion__domain').prefetch_related('answer')
-    permission_classes = [IsAdminRoleOrReadOnly]
+    permission_classes = [CatalogPermission]
     
     def get_serializer_class(self):
         # Используем разные сериализаторы для чтения и записи
@@ -440,7 +682,7 @@ class AssignedCriterionViewSet(viewsets.ModelViewSet):
 class EvaluationAnswerViewSet(viewsets.ModelViewSet):
     queryset = EvaluationAnswer.objects.all()
     serializer_class = EvaluationAnswerSerializer
-    permission_classes = [IsEvaluatorRoleOrReadOnly]
+    permission_classes = [EvaluationPermission]
 
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all()

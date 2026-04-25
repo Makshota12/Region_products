@@ -14,6 +14,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ProductDetail from './pages/ProductDetail';
 import Profile from './pages/Profile';
+import { ThemeProvider } from './contexts/ThemeContext';
+import ThemeSwitcher from './components/ThemeSwitcher';
 import './App.css';
 
 function App() {
@@ -56,57 +58,62 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <div className="App">
-        <nav>
-          <ul>
-            <li>
-              <Link to="/">📦 Продукты</Link>
-            </li>
-            <li>
-              <Link to="/add-product">➕ Добавить продукт</Link>
-            </li>
-            <li>
-              <Link to="/domains">⚙️ Модель оценки</Link>
-            </li>
-            <li>
-              <Link to="/evaluation-sessions">📊 Сессии оценки</Link>
-            </li>
-            <li>
-              {isLoggedIn ? (
-                <Link to="/profile">👤 {username}</Link>
-              ) : (
-                <Link to="/login">🔐 Вход</Link>
-              )}
-            </li>
-          </ul>
-        </nav>
-        <div className="content">
-          <Routes>
-            <Route path="/" element={<ProductList />} />
-            <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/add-product" element={<ProductForm />} />
-            <Route path="/edit-product/:id" element={<ProductForm />} />
+    <ThemeProvider>
+      <Router>
+        <div className="App">
+          <nav>
+            <ul>
+              <li>
+                <Link to="/">📦 Продукты</Link>
+              </li>
+              <li>
+                <Link to="/add-product">➕ Добавить продукт</Link>
+              </li>
+              <li>
+                <Link to="/domains">⚙️ Модель оценки</Link>
+              </li>
+              <li>
+                <Link to="/evaluation-sessions">📊 Сессии оценки</Link>
+              </li>
+              <li>
+                {isLoggedIn ? (
+                  <Link to="/profile">👤 {username}</Link>
+                ) : (
+                  <Link to="/login">🔐 Вход</Link>
+                )}
+              </li>
+              <li className="nav-actions">
+                <ThemeSwitcher />
+              </li>
+            </ul>
+          </nav>
+          <div className="content">
+            <Routes>
+              <Route path="/" element={<ProductList />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/add-product" element={<ProductForm />} />
+              <Route path="/edit-product/:id" element={<ProductForm />} />
 
-            <Route path="/domains" element={<DomainList />} />
-            <Route path="/add-domain" element={<DomainForm />} />
-            <Route path="/edit-domain/:id" element={<DomainForm />} />
-            <Route path="/domains/:domainId/criteria" element={<CriterionList />} />
-            <Route path="/domains/:domainId/add-criterion" element={<CriterionForm />} />
-            <Route path="/edit-criterion/:id" element={<CriterionForm />} />
+              <Route path="/domains" element={<DomainList />} />
+              <Route path="/add-domain" element={<DomainForm />} />
+              <Route path="/edit-domain/:id" element={<DomainForm />} />
+              <Route path="/domains/:domainId/criteria" element={<CriterionList />} />
+              <Route path="/domains/:domainId/add-criterion" element={<CriterionForm />} />
+              <Route path="/edit-criterion/:id" element={<CriterionForm />} />
 
-            <Route path="/evaluation-sessions" element={<EvaluationSessionList />} />
-            <Route path="/start-evaluation" element={<EvaluationSessionForm />} />
-            <Route path="/evaluation-session/:sessionId" element={<EvaluationInput />} />
-            <Route path="/evaluation-session/:sessionId/results" element={<EvaluationResults />} />
-            
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
+              <Route path="/evaluation-sessions" element={<EvaluationSessionList />} />
+              <Route path="/start-evaluation" element={<EvaluationSessionForm />} />
+              <Route path="/evaluation-session/:sessionId" element={<EvaluationInput />} />
+              <Route path="/evaluation-session/:sessionId/results" element={<EvaluationResults />} />
+
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/profile" element={<Profile />} />
+            </Routes>
+          </div>
         </div>
-      </div>
-    </Router>
+      </Router>
+    </ThemeProvider>
   );
 }
 
