@@ -36,6 +36,75 @@
 
 ## 🏗 Архитектура приложения
 
+### 🧱 Стиль архитектуры — Modular Monolith + SPA frontend
+
+Приложение спроектировано как **монолитный backend** на Django + REST API и **отдельный SPA-фронтенд** на React. В литературе такой стиль называют **«headless monolith»** или **«decoupled monolith»** — это **не микросервисы**, а «толстый» монолит, у которого UI вынесен в отдельное JS-приложение и общается с ядром только по REST/JSON.
+
+**Почему именно монолит, а не микросервисы:**
+
+| Критерий | Решение и обоснование |
+|---|---|
+| **Масштаб команды** | 1–2 разработчика — микросервисы дают больше операционных издержек, чем выгод. |
+| **Нагрузка** | Внутренний инструмент оценки (десятки–сотни оценок в день) — одного процесса Django более чем достаточно. |
+| **Транзакционность** | Расчёт интегральных индексов и сохранение ответов должны быть в одной транзакции БД — в монолите это бесплатно, в микросервисах потребовало бы Saga / 2PC. |
+| **Стоимость инфраструктуры** | Один контейнер backend + один контейнер БД vs. 5–7 сервисов + брокер сообщений + service mesh. |
+| **Скорость релизов** | Один `docker compose up` — никаких распределённых деплоев. |
+| **Целостность модели данных** | Все доменные сущности (Product, Domain, Criterion, Session, Answer, User) ссылаются друг на друга через FK — единая БД упрощает целостность. |
+
+**Состав системы (фактический):**
+
+- **Backend** — один Django-проект `digital_product_maturity_project` с одним Django-приложением `core`, в котором размещены **все** доменные модули: каталог продуктов, конструктор модели оценки, проведение сессий, расчёт индексов, генерация PDF, аутентификация, RBAC, аудит. Один процесс — одна БД (PostgreSQL/SQLite).
+- **Frontend** — React SPA (`frontend/`), общающийся с backend через `axios` по REST + JWT.
+- **БД** — PostgreSQL (prod) или SQLite (dev), общая для всего домена.
+- **Внешние сервисы** — только Google OAuth 2.0 для социального логина.
+
+**Применённые архитектурные паттерны внутри монолита:**
+
+- **MVC / MVT** — стандартный Django-паттерн (Model–View–Template, в нашем случае Template = DRF Serializer).
+- **Repository через ORM** — доступ к данным только через Django ORM, никаких сырых SQL.
+- **DTO через DRF Serializers** — внешний контракт API изолирован от моделей.
+- **RBAC через Permission classes** — `CatalogPermission`, `ProductPermission`, `EvaluationPermission` (см. `core/views.py`).
+- **Signals** для побочных эффектов (создание `Profile` при создании `User`).
+
+**Готовность к эволюции (если когда-то понадобятся микросервисы):**
+
+Сейчас всё бизнес-приложение лежит в одной Django-app `core`. Чтобы превратить его в **модульный монолит** (промежуточный шаг перед микросервисами), достаточно разнести `core` на 5 Django-apps:
+
+```text
+core/  →  products/        (каталог)
+          model_builder/   (домены, критерии, шкалы)
+          evaluations/     (сессии, ответы, расчёт индексов)
+          reporting/       (PDF, графики, дашборд)
+          accounts/        (User, Profile, RBAC, Google OAuth)
+```
+
+После такого разделения границы доменов становятся явными, и в будущем любой модуль (например, `reporting` с `matplotlib` и Celery) можно вынести в самостоятельный сервис без переписывания остального кода.
+
+```mermaid
+%%{init: {'theme':'default'}}%%
+flowchart LR
+    classDef ext fill:#cfe8ff,stroke:#3a7bd5,stroke-width:2px,color:#0b3d91
+    classDef mono fill:#d4f7d4,stroke:#1e8449,stroke-width:2.5px,color:#0e3d1e
+    classDef db fill:#f0f0f0,stroke:#4a4a4a,stroke-width:1.5px,color:#1f2937
+    classDef svc fill:#fde2e4,stroke:#c0392b,stroke-width:2px,color:#7a1d12
+
+    User["👤 Пользователь<br/>(браузер)"]:::ext
+    SPA["⚛️ React SPA<br/>(frontend)"]:::ext
+    Mono["🧱 Django Monolith<br/>(один процесс, app: core)<br/>—————————————<br/>products • model_builder<br/>evaluations • reporting<br/>accounts"]:::mono
+    DB[("🗄 PostgreSQL<br/>(одна БД)")]:::db
+    Google["🔐 Google OAuth"]:::svc
+
+    User <--> SPA
+    SPA -- "REST + JWT" --> Mono
+    Mono -- "JSON" --> SPA
+    Mono <--> DB
+    Mono -- "id_token verify" --> Google
+```
+
+**Вывод:** для текущего масштаба и команды — **монолит — правильный выбор**. Архитектура спроектирована так, чтобы при росте нагрузки её можно было плавно превратить в модульный монолит, а затем — точечно вынести нужные модули в сервисы, не переписывая всё.
+
+---
+
 ### Общая схема архитектуры
 
 ```
@@ -143,6 +212,7 @@
 ### Архитектура приложения (Mermaid)
 
 ```mermaid
+%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 graph TB
     subgraph Browser["🌐 Браузер (Клиент)"]
         UI[React SPA]
@@ -193,6 +263,7 @@ graph TB
 ### Поток запроса (Sequence Diagram)
 
 ```mermaid
+%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 sequenceDiagram
     participant U as 👤 Пользователь
     participant R as React App
@@ -234,6 +305,7 @@ sequenceDiagram
 ### Архитектура компонентов (Mermaid)
 
 ```mermaid
+%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 graph LR
     subgraph Frontend["Frontend (React)"]
         direction TB
@@ -320,6 +392,7 @@ User (1) ------------------------ (1) Profile >------------------------------ (N
 ### ER-диаграмма (Mermaid)
 
 ```mermaid
+%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 erDiagram
     PRODUCT ||--o{ EVALUATION_SESSION : has
     DOMAIN ||--o{ CRITERION : contains
@@ -684,6 +757,7 @@ digital_product_maturity_system/
 Классическая последовательная схема: анкеты рассылаются вручную, данные сводятся в Excel, графики строятся отдельно, отчёты собираются в Word/PowerPoint, согласование — через совещания. Высокая трудоёмкость, риск ошибок, отсутствие версионности и единого источника правды.
 
 ```mermaid
+%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 flowchart TD
     classDef event fill:#cfe8ff,stroke:#3a7bd5,stroke-width:2px,color:#0b3d91
     classDef task fill:#ffffff,stroke:#4a4a4a,stroke-width:1.5px,color:#1f2937
@@ -765,6 +839,7 @@ flowchart TD
 9. **Аудит-лог** всех действий и сравнение результатов с предыдущим периодом.
 
 ```mermaid
+%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 flowchart TD
     classDef event fill:#cfe8ff,stroke:#3a7bd5,stroke-width:2px,color:#0b3d91
     classDef task fill:#ffffff,stroke:#4a4a4a,stroke-width:1.5px,color:#1f2937
@@ -889,6 +964,7 @@ flowchart TD
 Система оценки зрелости показана одним процессом, взаимодействующим с пользователями и внешними сервисами. Видно «what goes in / what goes out».
 
 ```mermaid
+%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 flowchart LR
     classDef ext fill:#cfe8ff,stroke:#3a7bd5,stroke-width:2px,color:#0b3d91
     classDef sys fill:#d4f7d4,stroke:#1e8449,stroke-width:2.5px,color:#0e3d1e
@@ -925,6 +1001,7 @@ flowchart LR
 Внутренние процессы и хранилища данных. Показано, какие потоки идут между процессами и какие данные читаются/пишутся в БД.
 
 ```mermaid
+%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 flowchart TB
     classDef ext fill:#cfe8ff,stroke:#3a7bd5,stroke-width:2px,color:#0b3d91
     classDef proc fill:#fff4c2,stroke:#c69500,stroke-width:1.5px,color:#5b4400
@@ -1015,6 +1092,7 @@ flowchart TB
 Удобный «срез» — те же потоки, но сгруппированные с точки зрения каждой роли. Хорошо видно, что наблюдатель только читает, а админ имеет полный двунаправленный обмен.
 
 ```mermaid
+%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 flowchart LR
     classDef ext fill:#cfe8ff,stroke:#3a7bd5,stroke-width:2px,color:#0b3d91
     classDef sys fill:#d4f7d4,stroke:#1e8449,stroke-width:2.5px,color:#0e3d1e
@@ -1046,6 +1124,7 @@ flowchart LR
 Жизненный цикл одного экземпляра «сессия оценки продукта» — от создания до архивации, со всеми статусами и переходами. Полезно для понимания, в каком состоянии данные доступны для чтения/записи.
 
 ```mermaid
+%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 stateDiagram-v2
     [*] --> Черновик : Админ создал сессию,<br/>назначил продукт и критерии
 
