@@ -212,7 +212,7 @@ flowchart LR
 ### Архитектура приложения (Mermaid)
 
 ```mermaid
-%%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'background':'#ffffff','mainBkg':'#ffffff','secondBkg':'#ffffff','tertiaryColor':'#ffffff','lineColor':'#1f2937','textColor':'#111111'}}}%%
 graph TB
     subgraph Browser["🌐 Браузер (Клиент)"]
         UI[React SPA]
