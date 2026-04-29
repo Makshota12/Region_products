@@ -1628,6 +1628,71 @@ stateDiagram-v2
 
 ---
 
+## 📅 Диаграмма Ганта (план дипломного проекта)
+
+```mermaid
+gantt
+    title План разработки и опытной эксплуатации системы
+    dateFormat  YYYY-MM-DD
+    axisFormat  %d.%m
+
+    section Аналитика и проектирование
+    Сбор требований и согласование критериев зрелости :done, a1, 2026-01-10, 14d
+    Проектирование архитектуры и модели данных        :done, a2, after a1, 14d
+    Подготовка ER-диаграммы и API-контрактов          :done, a3, after a2, 10d
+
+    section Реализация backend
+    Реализация Django API и RBAC                      :done, b1, 2026-02-10, 20d
+    Реализация модуля сессий и расчетов индекса       :done, b2, after b1, 20d
+    Реализация генерации PDF-отчетов                  :done, b3, after b2, 12d
+
+    section Реализация frontend
+    UI-макеты и маршрутизация React                   :done, c1, 2026-03-01, 14d
+    Формы оценки, дашборды и визуализация             :done, c2, after c1, 20d
+    Интеграция аутентификации (JWT + Google OAuth)    :active, c3, after c2, 12d
+
+    section Тестирование и внедрение
+    Интеграционное тестирование                       :d1, 2026-04-10, 10d
+    Подготовка Docker-окружения                       :d2, after d1, 7d
+    Опытная эксплуатация и сбор метрик                :d3, after d2, 14d
+    Финальная доработка и подготовка к защите         :d4, after d3, 10d
+```
+
+## 📈 Мониторинг и централизованное логирование (опытная эксплуатация)
+
+На этапе опытной эксплуатации используется стек:
+
+- **Prometheus + Grafana** — сбор и визуализация метрик серверов и приложения.
+- **ELK Stack (Elasticsearch + Logstash + Kibana)** — централизованный сбор и анализ логов.
+
+Состав контейнеров в `docker-compose.yml`:
+
+- Метрики: `prometheus`, `grafana`, `node-exporter`, `cadvisor`, `postgres-exporter`
+- Логи: `elasticsearch`, `logstash`, `filebeat`, `kibana`
+
+### Точки доступа
+
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8000/api/`
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001` (`admin` / `admin`)
+- Elasticsearch: `http://localhost:9200`
+- Kibana: `http://localhost:5601`
+
+### Запуск полного стенда (приложение + мониторинг + ELK)
+
+```bash
+docker-compose up --build
+```
+
+После запуска:
+
+1. В Grafana добавьте datasource `Prometheus` с URL `http://prometheus:9090`.
+2. В Kibana создайте data view для индексов `app-logs-*`.
+3. Проверьте endpoint метрик приложения: `http://localhost:8000/metrics`.
+
+---
+
 ## 🚀 Быстрый старт
 
 ### Локальный запуск

@@ -59,7 +59,14 @@ function Login() {
       alert(`✅ Добро пожаловать, ${apiResponse.data.username}!`);
       navigate('/profile');
     } catch (err) {
-      setError('Не удалось войти через Google. Проверьте настройки OAuth.');
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      const backendError = err?.response?.data?.error;
+      setError(
+        backendError
+          ? `Google OAuth: ${backendError}`
+          : 'Не удалось войти через Google. Проверьте настройки OAuth.'
+      );
       console.error('Google login error:', err);
     } finally {
       setLoading(false);
