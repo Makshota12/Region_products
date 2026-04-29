@@ -575,6 +575,299 @@ erDiagram
 | user_id | FK → User | Пользователь Django (1:1) |
 | role_id | FK → Role | Роль пользователя |
 
+### Где строить физическую модель БД
+
+Физическую модель на основе вашей логической модели лучше строить в двух местах:
+
+1. **В коде проекта (основной источник истины)** — через `Django models` и миграции (`python manage.py makemigrations && python manage.py migrate`).
+2. **В PostgreSQL-клиенте для визуальной проверки** — например, в pgAdmin 4 (ERD Tool), DBeaver или DataGrip, подключившись к вашей БД и проверив фактические таблицы/индексы/ограничения.
+
+Для текущего проекта:
+
+- **Production БД:** `PostgreSQL` (основная целевая физическая модель).
+- **Development БД:** `SQLite` (локальная разработка и быстрый старт).
+
+### Полный SQL-код физической модели БД (PostgreSQL, полностью на русском)
+
+> Ниже приведен автономный DDL для визуализации в DBeaver: названия таблиц, полей, связей и индексов даны на русском языке.  
+> Такой скрипт удобно использовать для построения русскоязычной физической схемы (ERD) в отдельной БД.
+
+```sql
+-- Рекомендуется выполнять в PostgreSQL 15+
+BEGIN;
+
+-- =========================================================
+-- 1) Пользователи и справочники
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS "роль" (
+    "ид" BIGSERIAL PRIMARY KEY,
+    "название" VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS "пользователь" (
+    "ид" BIGSERIAL PRIMARY KEY,
+    "логин" VARCHAR(150) NOT NULL UNIQUE,
+    "email" VARCHAR(254),
+    "дата_создания" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS "профиль" (
+    "ид" BIGSERIAL PRIMARY KEY,
+    "пользователь_ид" BIGINT NOT NULL UNIQUE
+        REFERENCES "пользователь"("ид") ON DELETE CASCADE,
+    "роль_ид" BIGINT
+        REFERENCES "роль"("ид") ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS "продукт" (
+    "ид" BIGSERIAL PRIMARY KEY,
+    "название" VARCHAR(255) NOT NULL,
+    "описание" TEXT,
+    "владелец_подразделение" VARCHAR(255),
+    "ссылка_на_продукт" TEXT,
+    "дата_запуска" DATE,
+    "в_архиве" BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS "домен" (
+    "ид" BIGSERIAL PRIMARY KEY,
+    "название" VARCHAR(255) NOT NULL UNIQUE,
+    "описание" TEXT,
+    "вес" NUMERIC(5,2) NOT NULL CHECK ("вес" > 0 AND "вес" <= 100)
+);
+
+-- =========================================================
+-- 2) Критерии и шкалы
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS "критерий" (
+    "ид" BIGSERIAL PRIMARY KEY,
+    "домен_ид" BIGINT NOT NULL
+        REFERENCES "домен"("ид") ON DELETE CASCADE,
+    "название" VARCHAR(255) NOT NULL,
+    "описание" TEXT,
+    "вес" NUMERIC(5,2) NOT NULL CHECK ("вес" > 0 AND "вес" <= 100),
+    CONSTRAINT "уник_критерий_домен_название"
+        UNIQUE ("домен_ид", "название")
+);
+
+CREATE TABLE IF NOT EXISTS "шкала_оценки" (
+    "ид" BIGSERIAL PRIMARY KEY,
+    "критерий_ид" BIGINT NOT NULL
+        REFERENCES "критерий"("ид") ON DELETE CASCADE,
+    "балл" INTEGER NOT NULL CHECK ("балл" BETWEEN 1 AND 10),
+    "описание" TEXT NOT NULL,
+    CONSTRAINT "уник_шкала_критерий_балл"
+        UNIQUE ("критерий_ид", "балл")
+);
+
+-- =========================================================
+-- 3) Сессии оценки и назначения
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS "сессия_оценки" (
+    "ид" BIGSERIAL PRIMARY KEY,
+    "продукт_ид" BIGINT NOT NULL
+        REFERENCES "продукт"("ид") ON DELETE CASCADE,
+    "создал_пользователь_ид" BIGINT
+        REFERENCES "пользователь"("ид") ON DELETE SET NULL,
+    "дата_начала" DATE NOT NULL DEFAULT CURRENT_DATE,
+    "дата_окончания" DATE,
+    "статус" VARCHAR(50) NOT NULL DEFAULT 'ожидает',
+    CONSTRAINT "проверка_статус_сессии"
+        CHECK ("статус" IN ('ожидает', 'в_процессе', 'завершена', 'в_архиве')),
+    CONSTRAINT "проверка_даты_сессии"
+        CHECK ("дата_окончания" IS NULL OR "дата_окончания" >= "дата_начала")
+);
+
+CREATE TABLE IF NOT EXISTS "назначенный_критерий" (
+    "ид" BIGSERIAL PRIMARY KEY,
+    "сессия_оценки_ид" BIGINT NOT NULL
+        REFERENCES "сессия_оценки"("ид") ON DELETE CASCADE,
+    "критерий_ид" BIGINT NOT NULL
+        REFERENCES "критерий"("ид") ON DELETE CASCADE,
+    "назначен_пользователю_ид" BIGINT
+        REFERENCES "пользователь"("ид") ON DELETE SET NULL,
+    "проверено" BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT "уник_назначенный_критерий"
+        UNIQUE ("сессия_оценки_ид", "критерий_ид")
+);
+
+CREATE TABLE IF NOT EXISTS "ответ_оценки" (
+    "ид" BIGSERIAL PRIMARY KEY,
+    "назначенный_критерий_ид" BIGINT NOT NULL UNIQUE
+        REFERENCES "назначенный_критерий"("ид") ON DELETE CASCADE,
+    "значение_балла" INTEGER CHECK ("значение_балла" BETWEEN 1 AND 10),
+    "значение_метрики" NUMERIC(10,2),
+    "файл_доказательство" TEXT,
+    "комментарий" TEXT,
+    "время_отправки" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- =========================================================
+-- 4) Индексы для ускорения типовых запросов
+-- =========================================================
+
+CREATE INDEX IF NOT EXISTS "индекс_критерий_домен_ид"
+    ON "критерий"("домен_ид");
+
+CREATE INDEX IF NOT EXISTS "индекс_шкала_критерий_ид"
+    ON "шкала_оценки"("критерий_ид");
+
+CREATE INDEX IF NOT EXISTS "индекс_сессия_продукт_ид"
+    ON "сессия_оценки"("продукт_ид");
+
+CREATE INDEX IF NOT EXISTS "индекс_сессия_создатель_ид"
+    ON "сессия_оценки"("создал_пользователь_ид");
+
+CREATE INDEX IF NOT EXISTS "индекс_назначенный_критерий_сессия_ид"
+    ON "назначенный_критерий"("сессия_оценки_ид");
+
+CREATE INDEX IF NOT EXISTS "индекс_назначенный_критерий_критерий_ид"
+    ON "назначенный_критерий"("критерий_ид");
+
+CREATE INDEX IF NOT EXISTS "индекс_назначенный_критерий_пользователь_ид"
+    ON "назначенный_критерий"("назначен_пользователю_ид");
+
+CREATE INDEX IF NOT EXISTS "индекс_профиль_роль_ид"
+    ON "профиль"("роль_ид");
+
+COMMIT;
+```
+
+### Полный SQL-код физической модели БД (PostgreSQL, боевой вариант для Django)
+
+> Ниже — вариант с английскими именами таблиц/полей, совместимый с текущей backend-моделью Django.  
+> Используйте его для production-окружения или когда нужна схема, максимально близкая к коду приложения.
+
+```sql
+BEGIN;
+
+-- =========================================================
+-- 1) Справочники и базовые сущности
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS role (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS domain (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    weight NUMERIC(5,2) NOT NULL CHECK (weight > 0 AND weight <= 100)
+);
+
+CREATE TABLE IF NOT EXISTS product (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    department_owner VARCHAR(255),
+    product_link TEXT,
+    launch_date DATE,
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- =========================================================
+-- 2) Критерии и шкалы
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS criterion (
+    id BIGSERIAL PRIMARY KEY,
+    domain_id BIGINT NOT NULL REFERENCES domain(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    weight NUMERIC(5,2) NOT NULL CHECK (weight > 0 AND weight <= 100),
+    CONSTRAINT uq_criterion_domain_name UNIQUE (domain_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS rating_scale (
+    id BIGSERIAL PRIMARY KEY,
+    criterion_id BIGINT NOT NULL REFERENCES criterion(id) ON DELETE CASCADE,
+    score INTEGER NOT NULL CHECK (score BETWEEN 1 AND 10),
+    description TEXT NOT NULL,
+    CONSTRAINT uq_rating_scale_criterion_score UNIQUE (criterion_id, score)
+);
+
+-- =========================================================
+-- 3) Сессии оценки и назначения
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS evaluation_session (
+    id BIGSERIAL PRIMARY KEY,
+    product_id BIGINT NOT NULL REFERENCES product(id) ON DELETE CASCADE,
+    created_by_id INTEGER REFERENCES auth_user(id) ON DELETE SET NULL,
+    start_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    end_date DATE,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    CONSTRAINT chk_evaluation_status
+        CHECK (status IN ('pending', 'in_progress', 'completed', 'archived')),
+    CONSTRAINT chk_session_dates
+        CHECK (end_date IS NULL OR end_date >= start_date)
+);
+
+CREATE TABLE IF NOT EXISTS assigned_criterion (
+    id BIGSERIAL PRIMARY KEY,
+    evaluation_session_id BIGINT NOT NULL REFERENCES evaluation_session(id) ON DELETE CASCADE,
+    criterion_id BIGINT NOT NULL REFERENCES criterion(id) ON DELETE CASCADE,
+    assigned_to_id INTEGER REFERENCES auth_user(id) ON DELETE SET NULL,
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT uq_assigned_criterion UNIQUE (evaluation_session_id, criterion_id)
+);
+
+CREATE TABLE IF NOT EXISTS evaluation_answer (
+    id BIGSERIAL PRIMARY KEY,
+    assigned_criterion_id BIGINT NOT NULL UNIQUE REFERENCES assigned_criterion(id) ON DELETE CASCADE,
+    score_value INTEGER CHECK (score_value BETWEEN 1 AND 10),
+    metric_value NUMERIC(10,2),
+    file_evidence TEXT,
+    comment TEXT,
+    submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- =========================================================
+-- 4) Профили пользователей (расширение auth_user)
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS profile (
+    id BIGSERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL UNIQUE REFERENCES auth_user(id) ON DELETE CASCADE,
+    role_id BIGINT REFERENCES role(id) ON DELETE SET NULL
+);
+
+-- =========================================================
+-- 5) Индексы для ускорения типовых запросов
+-- =========================================================
+
+CREATE INDEX IF NOT EXISTS idx_criterion_domain_id
+    ON criterion(domain_id);
+
+CREATE INDEX IF NOT EXISTS idx_rating_scale_criterion_id
+    ON rating_scale(criterion_id);
+
+CREATE INDEX IF NOT EXISTS idx_eval_session_product_id
+    ON evaluation_session(product_id);
+
+CREATE INDEX IF NOT EXISTS idx_eval_session_created_by_id
+    ON evaluation_session(created_by_id);
+
+CREATE INDEX IF NOT EXISTS idx_assigned_criterion_session_id
+    ON assigned_criterion(evaluation_session_id);
+
+CREATE INDEX IF NOT EXISTS idx_assigned_criterion_criterion_id
+    ON assigned_criterion(criterion_id);
+
+CREATE INDEX IF NOT EXISTS idx_assigned_criterion_assigned_to_id
+    ON assigned_criterion(assigned_to_id);
+
+CREATE INDEX IF NOT EXISTS idx_profile_role_id
+    ON profile(role_id);
+
+COMMIT;
+```
+
 ---
 
 ## 🛠 Стек технологий
