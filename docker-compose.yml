@@ -80,7 +80,7 @@ services:
     command:
       - '--path.rootfs=/host'
     volumes:
-      - /:/host:ro,rslave
+      - /:/host:ro
     networks:
       - app-network
 
@@ -110,6 +110,8 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3001:3000"
     depends_on:
@@ -162,6 +164,27 @@ services:
       - "5601:5601"
     depends_on:
       - elasticsearch
+    networks:
+      - app-network
+
+  kibana-setup:
+    image: curlimages/curl:8.8.0
+    command:
+      - /bin/sh
+      - -c
+      - |
+        i=0;
+        until curl -s http://kibana:5601/api/status >/dev/null 2>&1 || [ $$i -ge 60 ]; do
+          i=$$((i+1));
+          sleep 5;
+        done;
+        curl -sS -X POST "http://kibana:5601/api/data_views/data_view" \
+          -H "Content-Type: application/json" \
+          -H "kbn-xsrf: true" \
+          -d '{"data_view":{"title":"app-logs-*","name":"Application Logs","timeFieldName":"@timestamp"}}' || true;
+    depends_on:
+      - kibana
+    restart: "no"
     networks:
       - app-network
 

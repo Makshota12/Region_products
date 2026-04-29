@@ -1679,6 +1679,15 @@ gantt
 - Elasticsearch: `http://localhost:9200`
 - Kibana: `http://localhost:5601`
 
+### Готовые дашборды после запуска
+
+- **Grafana (автоматически):**
+  - datasource `Prometheus` создается автоматически;
+  - dashboard `Diploma Project - System Overview` появляется в папке `Diploma Monitoring`.
+- **Kibana (автоматически):**
+  - создается Data View `app-logs-*` (название `Application Logs`);
+  - можно сразу открыть Discover и строить визуализации/дашборды по логам.
+
 ### Запуск полного стенда (приложение + мониторинг + ELK)
 
 ```bash

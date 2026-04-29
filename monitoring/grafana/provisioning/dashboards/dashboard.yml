@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: diploma-observability
+    orgId: 1
+    folder: Diploma Monitoring
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
