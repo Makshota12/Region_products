@@ -394,91 +394,91 @@ graph LR
 ```mermaid
 %%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 erDiagram
-    PRODUCT ||--o{ EVALUATION_SESSION : "имеет сессии"
-    DOMAIN ||--o{ CRITERION : "содержит критерии"
-    CRITERION ||--o{ RATING_SCALE : "определяет шкалу"
-    EVALUATION_SESSION ||--o{ ASSIGNED_CRITERION : "включает назначения"
-    CRITERION ||--o{ ASSIGNED_CRITERION : "назначается как"
-    ASSIGNED_CRITERION ||--|| EVALUATION_ANSWER : "имеет ответ"
-    USER ||--o{ EVALUATION_SESSION : "создает"
-    USER ||--o{ ASSIGNED_CRITERION : "назначен на"
-    USER ||--|| PROFILE : "имеет профиль"
-    ROLE ||--o{ PROFILE : "назначается в профиль"
+    ПРОДУКТ ||--o{ СЕССИЯ_ОЦЕНКИ : "имеет сессии"
+    ДОМЕН ||--o{ КРИТЕРИЙ : "содержит критерии"
+    КРИТЕРИЙ ||--o{ ШКАЛА_ОЦЕНКИ : "определяет шкалу"
+    СЕССИЯ_ОЦЕНКИ ||--o{ НАЗНАЧЕННЫЙ_КРИТЕРИЙ : "включает назначения"
+    КРИТЕРИЙ ||--o{ НАЗНАЧЕННЫЙ_КРИТЕРИЙ : "назначается как"
+    НАЗНАЧЕННЫЙ_КРИТЕРИЙ ||--|| ОТВЕТ_ОЦЕНКИ : "имеет ответ"
+    ПОЛЬЗОВАТЕЛЬ ||--o{ СЕССИЯ_ОЦЕНКИ : "создает"
+    ПОЛЬЗОВАТЕЛЬ ||--o{ НАЗНАЧЕННЫЙ_КРИТЕРИЙ : "назначен на"
+    ПОЛЬЗОВАТЕЛЬ ||--|| ПРОФИЛЬ : "имеет профиль"
+    РОЛЬ ||--o{ ПРОФИЛЬ : "назначается в профиль"
 
-    PRODUCT {
-        int id PK "идентификатор"
-        string name "название"
-        text description "описание"
-        string department_owner "владелец/ведомство"
-        string product_link "ссылка на продукт"
-        date launch_date "дата запуска"
-        bool is_archived "признак архива"
+    ПРОДУКТ {
+        int идентификатор PK "id"
+        string название "name"
+        text описание "description"
+        string владелец_ведомство "department_owner"
+        string ссылка_на_продукт "product_link"
+        date дата_запуска "launch_date"
+        bool в_архиве "is_archived"
     }
 
-    DOMAIN {
-        int id PK "идентификатор"
-        string name "название домена"
-        text description "описание домена"
-        decimal weight "вес домена"
+    ДОМЕН {
+        int идентификатор PK "id"
+        string название "name"
+        text описание "description"
+        decimal вес "weight"
     }
 
-    CRITERION {
-        int id PK "идентификатор"
-        int domain_id FK "ссылка на домен"
-        string name "название критерия"
-        text description "описание критерия"
-        decimal weight "вес критерия"
+    КРИТЕРИЙ {
+        int идентификатор PK "id"
+        int домен_id FK "domain_id"
+        string название "name"
+        text описание "description"
+        decimal вес "weight"
     }
 
-    RATING_SCALE {
-        int id PK "идентификатор"
-        int criterion_id FK "ссылка на критерий"
-        int score "балл"
-        text description "расшифровка балла"
+    ШКАЛА_ОЦЕНКИ {
+        int идентификатор PK "id"
+        int критерий_id FK "criterion_id"
+        int балл "score"
+        text описание "description"
     }
 
-    EVALUATION_SESSION {
-        int id PK "идентификатор"
-        int product_id FK "ссылка на продукт"
-        int created_by_id FK "создано пользователем"
-        date start_date "дата начала"
-        date end_date "дата завершения"
-        string status "статус"
+    СЕССИЯ_ОЦЕНКИ {
+        int идентификатор PK "id"
+        int продукт_id FK "product_id"
+        int создано_пользователем_id FK "created_by_id"
+        date дата_начала "start_date"
+        date дата_завершения "end_date"
+        string статус "status"
     }
 
-    ASSIGNED_CRITERION {
-        int id PK "идентификатор"
-        int evaluation_session_id FK "ссылка на сессию"
-        int criterion_id FK "ссылка на критерий"
-        int assigned_to_id FK "назначено пользователю"
-        bool is_verified "признак верификации"
+    НАЗНАЧЕННЫЙ_КРИТЕРИЙ {
+        int идентификатор PK "id"
+        int сессия_оценки_id FK "evaluation_session_id"
+        int критерий_id FK "criterion_id"
+        int назначено_пользователю_id FK "assigned_to_id"
+        bool подтверждено "is_verified"
     }
 
-    EVALUATION_ANSWER {
-        int id PK "идентификатор"
-        int assigned_criterion_id FK "ссылка на назначенный критерий"
-        int score_value "балл"
-        decimal metric_value "числовая метрика"
-        string file_evidence "файл-доказательство"
-        text comment "комментарий"
-        datetime submitted_at "время отправки"
+    ОТВЕТ_ОЦЕНКИ {
+        int идентификатор PK "id"
+        int назначенный_критерий_id FK "assigned_criterion_id"
+        int значение_балла "score_value"
+        decimal значение_метрики "metric_value"
+        string файл_доказательство "file_evidence"
+        text комментарий "comment"
+        datetime отправлено_в "submitted_at"
     }
 
-    USER {
-        int id PK "идентификатор"
-        string username "логин"
+    ПОЛЬЗОВАТЕЛЬ {
+        int идентификатор PK "id"
+        string логин "username"
         string email "email"
     }
 
-    PROFILE {
-        int id PK "идентификатор"
-        int user_id FK "ссылка на пользователя"
-        int role_id FK "ссылка на роль"
+    ПРОФИЛЬ {
+        int идентификатор PK "id"
+        int пользователь_id FK "user_id"
+        int роль_id FK "role_id"
     }
 
-    ROLE {
-        int id PK "идентификатор"
-        string name "название роли"
+    РОЛЬ {
+        int идентификатор PK "id"
+        string название "name"
     }
 ```
 
@@ -499,81 +499,81 @@ erDiagram
 #### Продукт (`Product`)
 | Поле | Тип | Описание |
 |------|-----|----------|
-| id | INTEGER | Первичный ключ (AUTO) |
-| name | VARCHAR(255) | Название продукта |
-| description | TEXT | Описание продукта |
-| department_owner | VARCHAR(255) | Владелец/ведомство |
-| product_link | URL | Ссылка на продукт |
-| launch_date | DATE | Дата запуска |
-| is_archived | BOOLEAN | Флаг архивации |
+| идентификатор (`id`) | INTEGER | Первичный ключ (AUTO) |
+| название (`name`) | VARCHAR(255) | Название продукта |
+| описание (`description`) | TEXT | Описание продукта |
+| владелец_ведомство (`department_owner`) | VARCHAR(255) | Владелец/ведомство |
+| ссылка_на_продукт (`product_link`) | URL | Ссылка на продукт |
+| дата_запуска (`launch_date`) | DATE | Дата запуска |
+| в_архиве (`is_archived`) | BOOLEAN | Флаг архивации |
 
 #### Домен оценки (`Domain`)
 | Поле | Тип | Описание |
 |------|-----|----------|
-| id | INTEGER | Первичный ключ (AUTO) |
-| name | VARCHAR(255) | Название домена (уникальное) |
-| description | TEXT | Описание домена |
-| weight | DECIMAL(5,2) | Вес в общем индексе (0.01-100%) |
+| идентификатор (`id`) | INTEGER | Первичный ключ (AUTO) |
+| название (`name`) | VARCHAR(255) | Название домена (уникальное) |
+| описание (`description`) | TEXT | Описание домена |
+| вес (`weight`) | DECIMAL(5,2) | Вес в общем индексе (0.01-100%) |
 
 #### Критерий оценки (`Criterion`)
 | Поле | Тип | Описание |
 |------|-----|----------|
-| id | INTEGER | Первичный ключ (AUTO) |
-| domain_id | FK → Domain | Внешний ключ на домен |
-| name | VARCHAR(255) | Название критерия |
-| description | TEXT | Описание критерия |
-| weight | DECIMAL(5,2) | Вес в домене (0.01-100%) |
+| идентификатор (`id`) | INTEGER | Первичный ключ (AUTO) |
+| домен_id (`domain_id`) | FK → Domain | Внешний ключ на домен |
+| название (`name`) | VARCHAR(255) | Название критерия |
+| описание (`description`) | TEXT | Описание критерия |
+| вес (`weight`) | DECIMAL(5,2) | Вес в домене (0.01-100%) |
 
 #### Шкала оценки (`RatingScale`)
 | Поле | Тип | Описание |
 |------|-----|----------|
-| id | INTEGER | Первичный ключ (AUTO) |
-| criterion_id | FK → Criterion | Внешний ключ на критерий |
-| score | INTEGER | Балл (1-10) |
-| description | TEXT | Текстовое описание балла |
+| идентификатор (`id`) | INTEGER | Первичный ключ (AUTO) |
+| критерий_id (`criterion_id`) | FK → Criterion | Внешний ключ на критерий |
+| балл (`score`) | INTEGER | Балл (1-10) |
+| описание (`description`) | TEXT | Текстовое описание балла |
 
 #### Сессия оценки (`EvaluationSession`)
 | Поле | Тип | Описание |
 |------|-----|----------|
-| id | INTEGER | Первичный ключ (AUTO) |
-| product_id | FK → Product | Оцениваемый продукт |
-| created_by | FK → User | Создатель сессии |
-| start_date | DATE | Дата начала (AUTO) |
-| end_date | DATE | Дата завершения |
-| status | VARCHAR(50) | ожидает/в_процессе/завершена/в_архиве |
+| идентификатор (`id`) | INTEGER | Первичный ключ (AUTO) |
+| продукт_id (`product_id`) | FK → Product | Оцениваемый продукт |
+| создано_пользователем (`created_by`) | FK → User | Создатель сессии |
+| дата_начала (`start_date`) | DATE | Дата начала (AUTO) |
+| дата_завершения (`end_date`) | DATE | Дата завершения |
+| статус (`status`) | VARCHAR(50) | ожидает/в_процессе/завершена/в_архиве |
 
 #### Назначенный критерий (`AssignedCriterion`)
 | Поле | Тип | Описание |
 |------|-----|----------|
-| id | INTEGER | Первичный ключ (AUTO) |
-| evaluation_session_id | FK → EvaluationSession | Сессия оценки |
-| criterion_id | FK → Criterion | Критерий |
-| assigned_to | FK → User | Ответственный |
-| is_verified | BOOLEAN | Флаг верификации |
+| идентификатор (`id`) | INTEGER | Первичный ключ (AUTO) |
+| сессия_оценки_id (`evaluation_session_id`) | FK → EvaluationSession | Сессия оценки |
+| критерий_id (`criterion_id`) | FK → Criterion | Критерий |
+| назначено_пользователю (`assigned_to`) | FK → User | Ответственный |
+| подтверждено (`is_verified`) | BOOLEAN | Флаг верификации |
 
 #### Ответ на оценку (`EvaluationAnswer`)
 | Поле | Тип | Описание |
 |------|-----|----------|
-| id | INTEGER | Первичный ключ (AUTO) |
-| assigned_criterion_id | FK → AssignedCriterion | Назначенный критерий (1:1) |
-| score_value | INTEGER | Балл (1-10) |
-| metric_value | DECIMAL(10,2) | Числовая метрика |
-| file_evidence | FILE | Файл-доказательство |
-| comment | TEXT | Комментарий |
-| submitted_at | DATETIME | Дата отправки (AUTO) |
+| идентификатор (`id`) | INTEGER | Первичный ключ (AUTO) |
+| назначенный_критерий_id (`assigned_criterion_id`) | FK → AssignedCriterion | Назначенный критерий (1:1) |
+| значение_балла (`score_value`) | INTEGER | Балл (1-10) |
+| значение_метрики (`metric_value`) | DECIMAL(10,2) | Числовая метрика |
+| файл_доказательство (`file_evidence`) | FILE | Файл-доказательство |
+| комментарий (`comment`) | TEXT | Комментарий |
+| отправлено_в (`submitted_at`) | DATETIME | Дата отправки (AUTO) |
 
 #### Роль пользователя (`Role`)
 | Поле | Тип | Описание |
 |------|-----|----------|
-| id | INTEGER | Первичный ключ (AUTO) |
-| name | VARCHAR(50) | администратор/эксперт/владелец/наблюдатель |
+| идентификатор (`id`) | INTEGER | Первичный ключ (AUTO) |
+| название (`name`) | VARCHAR(50) | администратор/эксперт/владелец/наблюдатель |
 
 #### Профиль пользователя (`Profile`)
 | Поле | Тип | Описание |
 |------|-----|----------|
-| id | INTEGER | Первичный ключ (AUTO) |
-| user_id | FK → User | Пользователь Django (1:1) |
-| role_id | FK → Role | Роль пользователя |
+| идентификатор (`id`) | INTEGER | Первичный ключ (AUTO) |
+| пользователь_id (`user_id`) | FK → User | Пользователь Django (1:1) |
+| роль_id (`role_id`) | FK → Role | Роль пользователя |
 
 ### Где строить физическую модель БД
 
