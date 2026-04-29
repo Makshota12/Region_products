@@ -868,102 +868,102 @@ CREATE INDEX IF NOT EXISTS idx_profile_role_id
 COMMIT;
 ```
 
-### Табличное описание физической модели (формат для отчета)
+### Tabular Description of the Physical Model (report format)
 
-Ниже приведено описание таблиц в формате: **Атрибут / Тип данных / Тип ключа / NOT NULL**.
+Below is the table description in the format: **Attribute / Data Type / Key Type / NOT NULL**.
 
-#### Таблица 4.1 — Описание таблицы `роль`
-| Атрибут | Тип данных | Тип ключа | NOT NULL |
+#### Table 4.1 - Description of table `role`
+| Attribute | Data Type | Key Type | NOT NULL |
 |---|---|---|---|
-| ид | BIGSERIAL | PK | + |
-| название | VARCHAR(50) | UQ | + |
+| id | BIGSERIAL | PK | + |
+| name | VARCHAR(50) | UQ | + |
 
-#### Таблица 4.2 — Описание таблицы `пользователь`
-| Атрибут | Тип данных | Тип ключа | NOT NULL |
+#### Table 4.2 - Description of table `app_user`
+| Attribute | Data Type | Key Type | NOT NULL |
 |---|---|---|---|
-| ид | BIGSERIAL | PK | + |
-| логин | VARCHAR(150) | UQ | + |
+| id | BIGSERIAL | PK | + |
+| username | VARCHAR(150) | UQ | + |
 | email | VARCHAR(254) | - | - |
-| дата_создания | TIMESTAMPTZ | - | + |
+| created_at | TIMESTAMPTZ | - | + |
 
-#### Таблица 4.3 — Описание таблицы `профиль`
-| Атрибут | Тип данных | Тип ключа | NOT NULL |
+#### Table 4.3 - Description of table `profile`
+| Attribute | Data Type | Key Type | NOT NULL |
 |---|---|---|---|
-| ид | BIGSERIAL | PK | + |
-| пользователь_ид | BIGINT | FK, UQ | + |
-| роль_ид | BIGINT | FK | - |
+| id | BIGSERIAL | PK | + |
+| user_id | BIGINT | FK, UQ | + |
+| role_id | BIGINT | FK | - |
 
-#### Таблица 4.4 — Описание таблицы `продукт`
-| Атрибут | Тип данных | Тип ключа | NOT NULL |
+#### Table 4.4 - Description of table `product`
+| Attribute | Data Type | Key Type | NOT NULL |
 |---|---|---|---|
-| ид | BIGSERIAL | PK | + |
-| название | VARCHAR(255) | - | + |
-| описание | TEXT | - | - |
-| владелец_подразделение | VARCHAR(255) | - | - |
-| ссылка_на_продукт | TEXT | - | - |
-| дата_запуска | DATE | - | - |
-| в_архиве | BOOLEAN | - | + |
+| id | BIGSERIAL | PK | + |
+| name | VARCHAR(255) | - | + |
+| description | TEXT | - | - |
+| department_owner | VARCHAR(255) | - | - |
+| product_link | TEXT | - | - |
+| launch_date | DATE | - | - |
+| is_archived | BOOLEAN | - | + |
 
-#### Таблица 4.5 — Описание таблицы `домен`
-| Атрибут | Тип данных | Тип ключа | NOT NULL |
+#### Table 4.5 - Description of table `domain`
+| Attribute | Data Type | Key Type | NOT NULL |
 |---|---|---|---|
-| ид | BIGSERIAL | PK | + |
-| название | VARCHAR(255) | UQ | + |
-| описание | TEXT | - | - |
-| вес | NUMERIC(5,2) | CHECK | + |
+| id | BIGSERIAL | PK | + |
+| name | VARCHAR(255) | UQ | + |
+| description | TEXT | - | - |
+| weight | NUMERIC(5,2) | CHECK | + |
 
-#### Таблица 4.6 — Описание таблицы `критерий`
-| Атрибут | Тип данных | Тип ключа | NOT NULL |
+#### Table 4.6 - Description of table `criterion`
+| Attribute | Data Type | Key Type | NOT NULL |
 |---|---|---|---|
-| ид | BIGSERIAL | PK | + |
-| домен_ид | BIGINT | FK | + |
-| название | VARCHAR(255) | UQ* | + |
-| описание | TEXT | - | - |
-| вес | NUMERIC(5,2) | CHECK | + |
+| id | BIGSERIAL | PK | + |
+| domain_id | BIGINT | FK | + |
+| name | VARCHAR(255) | UQ* | + |
+| description | TEXT | - | - |
+| weight | NUMERIC(5,2) | CHECK | + |
 
-\* Уникальность в паре (`домен_ид`, `название`).
+\* Unique as a pair (`domain_id`, `name`).
 
-#### Таблица 4.7 — Описание таблицы `шкала_оценки`
-| Атрибут | Тип данных | Тип ключа | NOT NULL |
+#### Table 4.7 - Description of table `rating_scale`
+| Attribute | Data Type | Key Type | NOT NULL |
 |---|---|---|---|
-| ид | BIGSERIAL | PK | + |
-| критерий_ид | BIGINT | FK | + |
-| балл | INTEGER | UQ*, CHECK | + |
-| описание | TEXT | - | + |
+| id | BIGSERIAL | PK | + |
+| criterion_id | BIGINT | FK | + |
+| score | INTEGER | UQ*, CHECK | + |
+| description | TEXT | - | + |
 
-\* Уникальность в паре (`критерий_ид`, `балл`).
+\* Unique as a pair (`criterion_id`, `score`).
 
-#### Таблица 4.8 — Описание таблицы `сессия_оценки`
-| Атрибут | Тип данных | Тип ключа | NOT NULL |
+#### Table 4.8 - Description of table `evaluation_session`
+| Attribute | Data Type | Key Type | NOT NULL |
 |---|---|---|---|
-| ид | BIGSERIAL | PK | + |
-| продукт_ид | BIGINT | FK | + |
-| создал_пользователь_ид | BIGINT | FK | - |
-| дата_начала | DATE | - | + |
-| дата_окончания | DATE | CHECK | - |
-| статус | VARCHAR(50) | CHECK | + |
+| id | BIGSERIAL | PK | + |
+| product_id | BIGINT | FK | + |
+| created_by_id | BIGINT | FK | - |
+| start_date | DATE | - | + |
+| end_date | DATE | CHECK | - |
+| status | VARCHAR(50) | CHECK | + |
 
-#### Таблица 4.9 — Описание таблицы `назначенный_критерий`
-| Атрибут | Тип данных | Тип ключа | NOT NULL |
+#### Table 4.9 - Description of table `assigned_criterion`
+| Attribute | Data Type | Key Type | NOT NULL |
 |---|---|---|---|
-| ид | BIGSERIAL | PK | + |
-| сессия_оценки_ид | BIGINT | FK, UQ* | + |
-| критерий_ид | BIGINT | FK, UQ* | + |
-| назначен_пользователю_ид | BIGINT | FK | - |
-| проверено | BOOLEAN | - | + |
+| id | BIGSERIAL | PK | + |
+| evaluation_session_id | BIGINT | FK, UQ* | + |
+| criterion_id | BIGINT | FK, UQ* | + |
+| assigned_to_id | BIGINT | FK | - |
+| is_verified | BOOLEAN | - | + |
 
-\* Уникальность в паре (`сессия_оценки_ид`, `критерий_ид`).
+\* Unique as a pair (`evaluation_session_id`, `criterion_id`).
 
-#### Таблица 4.10 — Описание таблицы `ответ_оценки`
-| Атрибут | Тип данных | Тип ключа | NOT NULL |
+#### Table 4.10 - Description of table `evaluation_answer`
+| Attribute | Data Type | Key Type | NOT NULL |
 |---|---|---|---|
-| ид | BIGSERIAL | PK | + |
-| назначенный_критерий_ид | BIGINT | FK, UQ | + |
-| значение_балла | INTEGER | CHECK | - |
-| значение_метрики | NUMERIC(10,2) | - | - |
-| файл_доказательство | TEXT | - | - |
-| комментарий | TEXT | - | - |
-| время_отправки | TIMESTAMPTZ | - | + |
+| id | BIGSERIAL | PK | + |
+| assigned_criterion_id | BIGINT | FK, UQ | + |
+| score_value | INTEGER | CHECK | - |
+| metric_value | NUMERIC(10,2) | - | - |
+| file_evidence | TEXT | - | - |
+| comment | TEXT | - | - |
+| submitted_at | TIMESTAMPTZ | - | + |
 
 ### Пояснительная записка: типы ключей и типы данных
 
