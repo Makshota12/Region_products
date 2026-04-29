@@ -352,10 +352,10 @@ graph LR
 
 ## 🗄 Структура базы данных
 
-### ER-диаграмма (Entity Relationship)
+### ER-диаграмма (сущность-связь)
 
 ```
-Product (1) --------------------< (N) EvaluationSession >-------------------- (1) User [created_by, SET_NULL]
+Продукт (1) --------------------< (N) СессияОценки >-------------------- (1) Пользователь [created_by, SET_NULL]
   id PK                               id PK                                         id PK
   name                                product_id FK -> Product.id                  username, email, ...
   description                         created_by_id FK -> User.id (nullable)
@@ -364,13 +364,13 @@ Product (1) --------------------< (N) EvaluationSession >-------------------- (1
   launch_date
   is_archived
 
-Domain (1) ---------------------< (N) Criterion (1) ------------------------< (N) RatingScale
+Домен (1) ---------------------< (N) Критерий (1) ------------------------< (N) ШкалаОценки
   id PK                               id PK                                       id PK
   name                                domain_id FK -> Domain.id                   criterion_id FK -> Criterion.id
   description                         name, description, weight                   score (1..10), description
   weight
 
-EvaluationSession (1) ----------< (N) AssignedCriterion >------------------- (1) Criterion
+СессияОценки (1) ----------< (N) НазначенныйКритерий >------------------- (1) Критерий
                                     id PK                                         id PK
                                     evaluation_session_id FK -> EvaluationSession.id
                                     criterion_id FK -> Criterion.id
@@ -378,12 +378,12 @@ EvaluationSession (1) ----------< (N) AssignedCriterion >------------------- (1)
                                     is_verified
                                     UNIQUE(evaluation_session_id, criterion_id)
 
-AssignedCriterion (1) ---------- (1) EvaluationAnswer
+НазначенныйКритерий (1) ---------- (1) ОтветОценки
                                    id PK
                                    assigned_criterion_id FK UNIQUE -> AssignedCriterion.id
                                    score_value, metric_value, file_evidence, comment, submitted_at
 
-User (1) ------------------------ (1) Profile >------------------------------ (N) Role
+Пользователь (1) ------------------------ (1) Профиль >------------------------------ (N) Роль
   id PK                              id PK                                        id PK
   username, email, ...               user_id FK UNIQUE -> User.id                 name (admin|expert|owner|observer)
                                     role_id FK -> Role.id (nullable, SET_NULL)
@@ -394,109 +394,109 @@ User (1) ------------------------ (1) Profile >------------------------------ (N
 ```mermaid
 %%{init: {'theme':'default', 'themeVariables': {'background':'#ffffff'}}}%%
 erDiagram
-    PRODUCT ||--o{ EVALUATION_SESSION : has
-    DOMAIN ||--o{ CRITERION : contains
-    CRITERION ||--o{ RATING_SCALE : defines
-    EVALUATION_SESSION ||--o{ ASSIGNED_CRITERION : includes
-    CRITERION ||--o{ ASSIGNED_CRITERION : assigned_as
-    ASSIGNED_CRITERION ||--|| EVALUATION_ANSWER : answered_by
-    USER ||--o{ EVALUATION_SESSION : creates
-    USER ||--o{ ASSIGNED_CRITERION : assigned_to
-    USER ||--|| PROFILE : has
-    ROLE ||--o{ PROFILE : assigned_to
+    PRODUCT ||--o{ EVALUATION_SESSION : "имеет сессии"
+    DOMAIN ||--o{ CRITERION : "содержит критерии"
+    CRITERION ||--o{ RATING_SCALE : "определяет шкалу"
+    EVALUATION_SESSION ||--o{ ASSIGNED_CRITERION : "включает назначения"
+    CRITERION ||--o{ ASSIGNED_CRITERION : "назначается как"
+    ASSIGNED_CRITERION ||--|| EVALUATION_ANSWER : "имеет ответ"
+    USER ||--o{ EVALUATION_SESSION : "создает"
+    USER ||--o{ ASSIGNED_CRITERION : "назначен на"
+    USER ||--|| PROFILE : "имеет профиль"
+    ROLE ||--o{ PROFILE : "назначается в профиль"
 
     PRODUCT {
-        int id PK
-        string name
-        text description
-        string department_owner
-        string product_link
-        date launch_date
-        bool is_archived
+        int id PK "идентификатор"
+        string name "название"
+        text description "описание"
+        string department_owner "владелец/ведомство"
+        string product_link "ссылка на продукт"
+        date launch_date "дата запуска"
+        bool is_archived "признак архива"
     }
 
     DOMAIN {
-        int id PK
-        string name
-        text description
-        decimal weight
+        int id PK "идентификатор"
+        string name "название домена"
+        text description "описание домена"
+        decimal weight "вес домена"
     }
 
     CRITERION {
-        int id PK
-        int domain_id FK
-        string name
-        text description
-        decimal weight
+        int id PK "идентификатор"
+        int domain_id FK "ссылка на домен"
+        string name "название критерия"
+        text description "описание критерия"
+        decimal weight "вес критерия"
     }
 
     RATING_SCALE {
-        int id PK
-        int criterion_id FK
-        int score
-        text description
+        int id PK "идентификатор"
+        int criterion_id FK "ссылка на критерий"
+        int score "балл"
+        text description "расшифровка балла"
     }
 
     EVALUATION_SESSION {
-        int id PK
-        int product_id FK
-        int created_by_id FK
-        date start_date
-        date end_date
-        string status
+        int id PK "идентификатор"
+        int product_id FK "ссылка на продукт"
+        int created_by_id FK "создано пользователем"
+        date start_date "дата начала"
+        date end_date "дата завершения"
+        string status "статус"
     }
 
     ASSIGNED_CRITERION {
-        int id PK
-        int evaluation_session_id FK
-        int criterion_id FK
-        int assigned_to_id FK
-        bool is_verified
+        int id PK "идентификатор"
+        int evaluation_session_id FK "ссылка на сессию"
+        int criterion_id FK "ссылка на критерий"
+        int assigned_to_id FK "назначено пользователю"
+        bool is_verified "признак верификации"
     }
 
     EVALUATION_ANSWER {
-        int id PK
-        int assigned_criterion_id FK
-        int score_value
-        decimal metric_value
-        string file_evidence
-        text comment
-        datetime submitted_at
+        int id PK "идентификатор"
+        int assigned_criterion_id FK "ссылка на назначенный критерий"
+        int score_value "балл"
+        decimal metric_value "числовая метрика"
+        string file_evidence "файл-доказательство"
+        text comment "комментарий"
+        datetime submitted_at "время отправки"
     }
 
     USER {
-        int id PK
-        string username
-        string email
+        int id PK "идентификатор"
+        string username "логин"
+        string email "email"
     }
 
     PROFILE {
-        int id PK
-        int user_id FK
-        int role_id FK
+        int id PK "идентификатор"
+        int user_id FK "ссылка на пользователя"
+        int role_id FK "ссылка на роль"
     }
 
     ROLE {
-        int id PK
-        string name
+        int id PK "идентификатор"
+        string name "название роли"
     }
 ```
 
 ### Кардинальности и правила связей
 
-- `Product 1:N EvaluationSession` — у продукта может быть много сессий оценки.
-- `Domain 1:N Criterion` — каждый критерий принадлежит ровно одному домену.
-- `Criterion 1:N RatingScale` — у критерия несколько уровней шкалы.
-- `EvaluationSession N:M Criterion` реализовано через `AssignedCriterion`.
-- `AssignedCriterion 1:1 EvaluationAnswer` — на один назначенный критерий максимум один ответ.
-- `User 1:N EvaluationSession` через `created_by` (`SET_NULL` при удалении пользователя).
-- `User 1:N AssignedCriterion` через `assigned_to` (`SET_NULL` при удалении пользователя).
-- `User 1:1 Profile` — профиль создается для каждого пользователя.
-- `Role 1:N Profile` — роль может быть назначена многим пользователям; роль в профиле может быть `NULL`.
+- `Продукт 1:N СессияОценки` — у продукта может быть много сессий оценки.
+- `Домен 1:N Критерий` — каждый критерий принадлежит ровно одному домену.
+- `Критерий 1:N ШкалаОценки` — у критерия несколько уровней шкалы.
+- `СессияОценки N:M Критерий` реализовано через `НазначенныйКритерий`.
+- `НазначенныйКритерий 1:1 ОтветОценки` — на один назначенный критерий максимум один ответ.
+- `Пользователь 1:N СессияОценки` через `created_by` (`SET_NULL` при удалении пользователя).
+- `Пользователь 1:N НазначенныйКритерий` через `assigned_to` (`SET_NULL` при удалении пользователя).
+- `Пользователь 1:1 Профиль` — профиль создается для каждого пользователя.
+- `Роль 1:N Профиль` — роль может быть назначена многим пользователям; роль в профиле может быть `NULL`.
 
 ### Описание таблиц
 
-#### Product (Цифровой продукт)
+#### Продукт (`Product`)
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ (AUTO) |
@@ -507,7 +507,7 @@ erDiagram
 | launch_date | DATE | Дата запуска |
 | is_archived | BOOLEAN | Флаг архивации |
 
-#### Domain (Домен оценки)
+#### Домен оценки (`Domain`)
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ (AUTO) |
@@ -515,7 +515,7 @@ erDiagram
 | description | TEXT | Описание домена |
 | weight | DECIMAL(5,2) | Вес в общем индексе (0.01-100%) |
 
-#### Criterion (Критерий оценки)
+#### Критерий оценки (`Criterion`)
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ (AUTO) |
@@ -524,7 +524,7 @@ erDiagram
 | description | TEXT | Описание критерия |
 | weight | DECIMAL(5,2) | Вес в домене (0.01-100%) |
 
-#### RatingScale (Шкала оценки)
+#### Шкала оценки (`RatingScale`)
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ (AUTO) |
@@ -532,7 +532,7 @@ erDiagram
 | score | INTEGER | Балл (1-10) |
 | description | TEXT | Текстовое описание балла |
 
-#### EvaluationSession (Сессия оценки)
+#### Сессия оценки (`EvaluationSession`)
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ (AUTO) |
@@ -540,9 +540,9 @@ erDiagram
 | created_by | FK → User | Создатель сессии |
 | start_date | DATE | Дата начала (AUTO) |
 | end_date | DATE | Дата завершения |
-| status | VARCHAR(50) | pending/in_progress/completed/archived |
+| status | VARCHAR(50) | ожидает/в_процессе/завершена/в_архиве |
 
-#### AssignedCriterion (Назначенный критерий)
+#### Назначенный критерий (`AssignedCriterion`)
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ (AUTO) |
@@ -551,7 +551,7 @@ erDiagram
 | assigned_to | FK → User | Ответственный |
 | is_verified | BOOLEAN | Флаг верификации |
 
-#### EvaluationAnswer (Ответ на оценку)
+#### Ответ на оценку (`EvaluationAnswer`)
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ (AUTO) |
@@ -562,13 +562,13 @@ erDiagram
 | comment | TEXT | Комментарий |
 | submitted_at | DATETIME | Дата отправки (AUTO) |
 
-#### Role (Роль пользователя)
+#### Роль пользователя (`Role`)
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ (AUTO) |
-| name | VARCHAR(50) | admin/expert/owner/observer |
+| name | VARCHAR(50) | администратор/эксперт/владелец/наблюдатель |
 
-#### Profile (Профиль пользователя)
+#### Профиль пользователя (`Profile`)
 | Поле | Тип | Описание |
 |------|-----|----------|
 | id | INTEGER | Первичный ключ (AUTO) |
