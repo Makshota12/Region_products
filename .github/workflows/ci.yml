@@ -48,7 +48,7 @@ jobs:
           npm config set fetch-retry-maxtimeout 120000
       - name: Install dependencies
         run: |
-          npm ci || npm ci
+          npm ci --legacy-peer-deps || npm install --legacy-peer-deps
       - name: Run eslint
         run: npx --yes eslint@8.57.1 src --ext .js,.jsx --quiet
 
@@ -95,7 +95,7 @@ jobs:
           npm config set fetch-retry-maxtimeout 120000
       - name: Install dependencies
         run: |
-          npm ci || npm ci
+          npm ci --legacy-peer-deps || npm install --legacy-peer-deps
       - name: Run tests
         run: CI=true npm test -- --watchAll=false
 
