@@ -1144,6 +1144,20 @@ digital_product_maturity_system/
 | POST | `/api/auth/register/` | Регистрация |
 | GET | `/api/auth/user/` | Текущий пользователь |
 
+### API импорта/экспорта для интеграции с реестрами
+
+| Назначение | Body | Ответ |
+|---|---|---|
+| `POST /api/products/import/csv` — импорт списка продуктов из CSV-файла ведомственного реестра | `multipart/form-data`: `file` (обязательно), `delimiter` (опц.), `dry_run` (опц.) | JSON со статистикой импорта: `created`, `updated`, `skipped`, `errors[]` |
+| `POST /api/products/import/json` — импорт списка продуктов через JSON (например, после REST-запроса к внешней системе) | JSON: `{"products":[{"name":"...","description":"...","department_owner":"...","product_link":"...","launch_date":"YYYY-MM-DD"}], "dry_run": false}` | JSON со статистикой: `created`, `updated`, `errors[]` |
+| `POST /api/integrations/registry/sync` — запуск синхронизации с внешним ведомственным REST API | JSON: `{"source":"registry_a","since":"YYYY-MM-DDTHH:MM:SSZ","full_sync":false}` | JSON: `{"job_id":"...","status":"pending"}` |
+| `GET /api/products/import/jobs/{job_id}` — проверка статуса асинхронного импорта | Не требуется | JSON: `{"job_id":"...","status":"pending|running|success|failed","progress":0-100,"errors":[]}` |
+| `GET /api/products/import/template/csv` — скачать шаблон CSV для корректной загрузки | Не требуется | Файл CSV (шаблон с колонками продукта) |
+| `GET /api/reports/portfolio/export/json` — синхронный экспорт сводного отчета по портфелю в JSON | Query params: `date_from`, `date_to`, `include_domains=true|false`, `include_history=true|false` | JSON-отчет по портфелю для загрузки в аналитическую платформу |
+| `POST /api/reports/portfolio/export/json` — запуск асинхронной выгрузки сводного JSON-отчета | JSON: `{"date_from":"YYYY-MM-DD","date_to":"YYYY-MM-DD","include_domains":true,"include_history":true}` | JSON: `{"export_id":"...","status":"pending"}` |
+| `GET /api/reports/exports/{export_id}` — статус асинхронной выгрузки отчета | Не требуется | JSON: `{"export_id":"...","status":"pending|running|ready|failed","progress":0-100}` |
+| `GET /api/reports/exports/{export_id}/download` — загрузка готового JSON-отчета | Не требуется | Файл JSON отчета |
+
 ---
 
 ## 📈 Расчёт индекса зрелости
