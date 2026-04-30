@@ -1,0 +1,59 @@
+stages:
+  - lint
+  - test
+  - build
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+default:
+  interruptible: true
+
+backend_lint:
+  stage: lint
+  image: python:3.11
+  script:
+    - cd backend
+    - pip install -r requirements.txt
+    - pip install flake8
+    - flake8 digital_product_maturity_project --exclude migrations --max-line-length=120 --select=E9,F63,F7,F82 --show-source
+
+frontend_lint:
+  stage: lint
+  image: node:20
+  script:
+    - cd frontend
+    - npm ci
+    - npx --yes eslint@8.57.1 src --ext .js,.jsx --quiet
+
+backend_unit_tests:
+  stage: test
+  image: python:3.11
+  script:
+    - cd backend
+    - pip install -r requirements.txt
+    - cd digital_product_maturity_project
+    - python manage.py migrate --noinput
+    - python manage.py test
+
+frontend_unit_tests:
+  stage: test
+  image: node:20
+  script:
+    - cd frontend
+    - npm ci
+    - CI=true npm test -- --watchAll=false
+
+docker_build_images:
+  stage: build
+  image: docker:24
+  services:
+    - name: docker:24-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - docker build -t "$CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA" ./backend
+    - docker build -t "$CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA" ./frontend
