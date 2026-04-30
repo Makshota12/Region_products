@@ -1133,8 +1133,12 @@ digital_product_maturity_system/
 | GET/POST | `/api/evaluation-sessions/` | Сессии оценки |
 | GET | `/api/evaluation-sessions/{id}/get_overall_maturity_index/` | Индекс зрелости |
 | GET | `/api/evaluation-sessions/{id}/get_domain_scores/` | Оценки по доменам |
+| GET | `/api/evaluation-sessions/compare_products/?product_ids=1,2,3` | Сравнение последних индексов по продуктам |
+| GET | `/api/evaluation-sessions/product_history/?product_id={id}` | История индекса зрелости по продукту |
 | GET | `/api/evaluation-sessions/{id}/generate_maturity_passport/` | PDF паспорт |
 | GET/POST | `/api/assigned-criteria/` | Назначенные критерии |
+| POST | `/api/assigned-criteria/{id}/verify/` | Подтвердить критерий (верификатор) |
+| POST | `/api/assigned-criteria/{id}/request_changes/` | Запросить уточнения (верификатор) |
 | GET/POST | `/api/evaluation-answers/` | Ответы на оценку |
 | POST | `/api/auth/login/` | Вход |
 | POST | `/api/auth/register/` | Регистрация |
@@ -1702,6 +1706,59 @@ docker-compose up --build
 
 ---
 
+### Резервное копирование БД (ежесуточно)
+
+В `docker-compose.yml` добавлен сервис `db-backup`, который:
+
+- создает дамп PostgreSQL в `./backups` каждые 24 часа;
+- хранит резервные копии с ротацией (по умолчанию 7 дней).
+
+Основные параметры:
+
+- `BACKUP_INTERVAL_SECONDS=86400`
+- `RETENTION_DAYS=7`
+
+Пример ручного восстановления:
+
+```bash
+gunzip -c backups/digital_product_maturity_YYYYMMDD_HHMMSS.sql.gz | \
+docker exec -i <postgres_container_name> psql -U postgres -d digital_product_maturity
+```
+
+---
+
+### Базовые production-настройки безопасности
+
+Настройки читаются из `.env`:
+
+- `DEBUG=false`
+- `ALLOWED_HOSTS=example.ru,api.example.ru`
+- `CORS_ALLOW_ALL_ORIGINS=false`
+- `CORS_ALLOWED_ORIGINS=https://example.ru,https://app.example.ru`
+- `CSRF_TRUSTED_ORIGINS=https://example.ru,https://app.example.ru`
+- `SECURE_SSL_REDIRECT=true`
+- `SESSION_COOKIE_SECURE=true`
+- `CSRF_COOKIE_SECURE=true`
+
+---
+
+### Проверка требований производительности (k6)
+
+Добавлен smoke/performance-сценарий: `tests/performance/k6-smoke.js`.
+
+Пример запуска (50 виртуальных пользователей, 60 сек):
+
+```bash
+k6 run tests/performance/k6-smoke.js
+```
+
+Критерии в сценарии:
+
+- `p(95) < 3000ms` для HTTP-запросов;
+- доля ошибок `< 5%`.
+
+---
+
 ## 🚀 Быстрый старт
 
 ### Локальный запуск
@@ -1741,3 +1798,34 @@ MIT License
 ## 👨‍💻 Автор
 
 Система разработана для оценки зрелости цифровых продуктов региона.
+
+---
+
+## ✅ Матрица покрытия требований
+
+### Функциональные требования
+
+| Требование | Статус | Как покрыто |
+|---|---|---|
+| ФТ-01 Реестр продуктов | ✅ Выполнено | CRUD + архивация (`Product`, `/api/products/`) |
+| ФТ-02 Конструктор критериев | ✅ Выполнено | `Domain`, `Criterion`, `RatingScale` + API |
+| ФТ-03 Оценочные сессии | ✅ Выполнено | `EvaluationSession`, автоназначение `AssignedCriterion` |
+| ФТ-04 Ввод и верификация | ✅ Выполнено | `EvaluationAnswer` (балл/метрика/файл/коммент) + `verify/request_changes` |
+| ФТ-05 Расчет и визуализация | ✅ Выполнено | Индексы, графики, сравнение продуктов, история индекса |
+| ФТ-06 Отчетность | ✅ Выполнено | Паспорт зрелости PDF + портфельный отчет |
+| ФТ-07 Роли и доступ | ✅ Выполнено | `Role`, `Profile`, permission-классы RBAC |
+
+### Нефункциональные требования
+
+| Требование | Статус | Как покрыто |
+|---|---|---|
+| НФТ-01 Производительность | 🟡 Частично | k6 smoke добавлен, требуется регулярный запуск и фиксация SLA-отчетов |
+| НФТ-02 Usability | 🟡 Частично | адаптивный web-интерфейс, статусы и подтверждения; нужны UX-тесты с пользователями |
+| НФТ-03 Надежность и безопасность | 🟡 Частично | HTTPS/secure cookies/env hardening, JWT, хэш-пароли, backup; требуется production TLS-контур и аудит OWASP |
+| НФТ-04 Техническая реализация | ✅ Выполнено | клиент-сервер, Django+React+PostgreSQL, Docker Compose |
+| НФТ-05 Масштабируемость | 🟡 Частично | подготовлен модульный монолит и контейнеризация; автоскейлинг не внедрен |
+
+### Ограничения прототипа
+
+- SLA (3 сек при 50 одновременных пользователях и PDF до 30 сек) подтверждается нагрузочным тестом и инфраструктурой эксплуатации.
+- Полный security hardening (WAF, централизованный секрет-менеджмент, регулярный pentest) относится к production-контуру региона.

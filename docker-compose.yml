@@ -14,6 +14,32 @@ services:
     networks:
       - app-network
 
+  db-backup:
+    image: postgres:15-alpine
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - POSTGRES_DB=digital_product_maturity
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - BACKUP_DIR=/backups
+      - RETENTION_DAYS=7
+      - BACKUP_INTERVAL_SECONDS=86400
+    volumes:
+      - ./scripts/db_backup.sh:/usr/local/bin/db_backup.sh:ro
+      - ./backups:/backups
+    command: >
+      sh -c "chmod +x /usr/local/bin/db_backup.sh &&
+             /usr/local/bin/db_backup.sh &&
+             while true; do
+               sleep $${BACKUP_INTERVAL_SECONDS};
+               /usr/local/bin/db_backup.sh;
+             done"
+    networks:
+      - app-network
+
   backend:
     build:
       context: ./backend

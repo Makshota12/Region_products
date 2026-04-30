@@ -378,6 +378,72 @@ class EvaluationSessionViewSet(viewsets.ModelViewSet):
             
         return Response({'domain_scores': domain_scores}, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'])
+    def compare_products(self, request):
+        """Сравнение последних завершенных оценок по продуктам."""
+        product_ids_raw = request.query_params.get('product_ids', '')
+        product_ids = []
+        if product_ids_raw:
+            product_ids = [pid.strip() for pid in product_ids_raw.split(',') if pid.strip().isdigit()]
+
+        completed_sessions = EvaluationSession.objects.filter(status='completed').select_related('product')
+        if product_ids:
+            completed_sessions = completed_sessions.filter(product_id__in=product_ids)
+
+        latest_by_product = {}
+        for session in completed_sessions.order_by('product_id', '-start_date', '-id'):
+            if session.product_id not in latest_by_product:
+                latest_by_product[session.product_id] = session
+
+        result = []
+        for product_id, session in latest_by_product.items():
+            result.append({
+                'product_id': product_id,
+                'product_name': session.product.name,
+                'session_id': session.id,
+                'overall_index': round(session.get_overall_maturity_index(), 4),
+                'start_date': session.start_date,
+            })
+
+        result.sort(key=lambda item: item['overall_index'], reverse=True)
+        return Response({'products': result}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def product_history(self, request):
+        """История индекса зрелости для продукта по завершенным сессиям."""
+        product_id = request.query_params.get('product_id')
+        if not product_id or not str(product_id).isdigit():
+            return Response(
+                {'error': 'Нужно передать корректный product_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        product = Product.objects.filter(id=product_id).first()
+        if not product:
+            return Response({'error': 'Продукт не найден'}, status=status.HTTP_404_NOT_FOUND)
+
+        sessions = EvaluationSession.objects.filter(
+            product_id=product_id,
+            status='completed'
+        ).order_by('start_date', 'id')
+
+        history = []
+        for session in sessions:
+            history.append({
+                'session_id': session.id,
+                'start_date': session.start_date,
+                'overall_index': round(session.get_overall_maturity_index(), 4),
+            })
+
+        return Response(
+            {
+                'product_id': product.id,
+                'product_name': product.name,
+                'history': history,
+            },
+            status=status.HTTP_200_OK
+        )
+
     @action(detail=True, methods=['get'])
     def generate_maturity_passport(self, request, pk=None):
         """Генерация паспорта зрелости продукта в PDF (на русском языке)"""
@@ -662,7 +728,7 @@ class EvaluationSessionViewSet(viewsets.ModelViewSet):
 
 class AssignedCriterionViewSet(viewsets.ModelViewSet):
     queryset = AssignedCriterion.objects.select_related('criterion', 'criterion__domain').prefetch_related('answer')
-    permission_classes = [CatalogPermission]
+    permission_classes = [EvaluationPermission]
     
     def get_serializer_class(self):
         # Используем разные сериализаторы для чтения и записи
@@ -678,11 +744,51 @@ class AssignedCriterionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(evaluation_session=evaluation_session)
         return queryset.order_by('criterion__domain__name', 'criterion__name')
 
+    @action(detail=True, methods=['post'])
+    def verify(self, request, pk=None):
+        role = _resolve_role(request.user)
+        if role not in {ROLE_ADMIN, ROLE_EXPERT}:
+            return Response({'error': 'Недостаточно прав для верификации'}, status=status.HTTP_403_FORBIDDEN)
+        assigned = self.get_object()
+        assigned.is_verified = True
+        assigned.verification_status = 'verified'
+        assigned.verification_comment = request.data.get('comment', '') or ''
+        assigned.save(update_fields=['is_verified', 'verification_status', 'verification_comment'])
+        serializer = self.get_serializer(assigned)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def request_changes(self, request, pk=None):
+        role = _resolve_role(request.user)
+        if role not in {ROLE_ADMIN, ROLE_EXPERT}:
+            return Response({'error': 'Недостаточно прав для верификации'}, status=status.HTTP_403_FORBIDDEN)
+        assigned = self.get_object()
+        assigned.is_verified = False
+        assigned.verification_status = 'changes_requested'
+        assigned.verification_comment = request.data.get('comment', '') or ''
+        assigned.save(update_fields=['is_verified', 'verification_status', 'verification_comment'])
+        serializer = self.get_serializer(assigned)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class EvaluationAnswerViewSet(viewsets.ModelViewSet):
     queryset = EvaluationAnswer.objects.all()
     serializer_class = EvaluationAnswerSerializer
     permission_classes = [EvaluationPermission]
+
+    def _reset_verification(self, answer):
+        assigned = answer.assigned_criterion
+        assigned.is_verified = False
+        assigned.verification_status = 'pending'
+        assigned.save(update_fields=['is_verified', 'verification_status'])
+
+    def perform_create(self, serializer):
+        answer = serializer.save()
+        self._reset_verification(answer)
+
+    def perform_update(self, serializer):
+        answer = serializer.save()
+        self._reset_verification(answer)
 
 class RoleViewSet(viewsets.ModelViewSet):
     queryset = Role.objects.all()

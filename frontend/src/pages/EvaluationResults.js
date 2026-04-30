@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, Link } from 'react-router-dom';
-import { Radar, Bar, Doughnut } from 'react-chartjs-2';
+import { Radar, Bar, Doughnut, Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   RadialLinearScale,
@@ -35,39 +35,64 @@ function EvaluationResults() {
   const [product, setProduct] = useState(null);
   const [domainScores, setDomainScores] = useState({});
   const [overallIndex, setOverallIndex] = useState(0);
+  const [compareProducts, setCompareProducts] = useState([]);
+  const [productsList, setProductsList] = useState([]);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [historyPoints, setHistoryPoints] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Загружаем сессию
-    axios.get(`/api/evaluation-sessions/${sessionId}/`)
-      .then(response => {
-        setSession(response.data);
-        // Загружаем продукт
-        return axios.get(`/api/products/${response.data.product}/`);
-      })
-      .then(response => {
-        setProduct(response.data);
-      })
-      .catch(error => console.error('Ошибка при загрузке сессии:', error));
+    const loadData = async () => {
+      try {
+        const sessionResponse = await axios.get(`/api/evaluation-sessions/${sessionId}/`);
+        setSession(sessionResponse.data);
 
-    // Загружаем оценки по доменам
-    axios.get(`/api/evaluation-sessions/${sessionId}/get_domain_scores/`)
-      .then(response => {
-        setDomainScores(response.data.domain_scores);
-      })
-      .catch(error => console.error('Ошибка при загрузке оценок доменов:', error));
+        const [productResponse, domainsResponse, indexResponse, productsResponse] = await Promise.all([
+          axios.get(`/api/products/${sessionResponse.data.product}/`),
+          axios.get(`/api/evaluation-sessions/${sessionId}/get_domain_scores/`),
+          axios.get(`/api/evaluation-sessions/${sessionId}/get_overall_maturity_index/`),
+          axios.get('/api/products/'),
+        ]);
 
-    // Загружаем общий индекс зрелости
-    axios.get(`/api/evaluation-sessions/${sessionId}/get_overall_maturity_index/`)
-      .then(response => {
-        setOverallIndex(response.data.overall_index);
+        setProduct(productResponse.data);
+        setDomainScores(domainsResponse.data.domain_scores || {});
+        setOverallIndex(indexResponse.data.overall_index || 0);
+        setProductsList(productsResponse.data || []);
+        setSelectedProductIds([String(sessionResponse.data.product)]);
+
+        const [compareResponse, historyResponse] = await Promise.all([
+          axios.get(`/api/evaluation-sessions/compare_products/?product_ids=${sessionResponse.data.product}`),
+          axios.get(`/api/evaluation-sessions/product_history/?product_id=${sessionResponse.data.product}`),
+        ]);
+
+        setCompareProducts(compareResponse.data.products || []);
+        setHistoryPoints(historyResponse.data.history || []);
+      } catch (error) {
+        console.error('Ошибка при загрузке результатов:', error);
+      } finally {
         setLoading(false);
-      })
-      .catch(error => {
-        console.error('Ошибка при загрузке индекса зрелости:', error);
-        setLoading(false);
-      });
+      }
+    };
+
+    loadData();
   }, [sessionId]);
+
+  const reloadCompare = async (ids) => {
+    const idsParam = ids.join(',');
+    try {
+      const response = await axios.get(`/api/evaluation-sessions/compare_products/?product_ids=${idsParam}`);
+      setCompareProducts(response.data.products || []);
+    } catch (error) {
+      console.error('Ошибка при загрузке сравнения продуктов:', error);
+    }
+  };
+
+  const handleCompareSelection = (event) => {
+    const values = Array.from(event.target.selectedOptions).map((option) => option.value);
+    const normalized = values.length > 0 ? values : selectedProductIds;
+    setSelectedProductIds(normalized);
+    reloadCompare(normalized);
+  };
 
   const getMaturityLevel = (index) => {
     if (index >= 8) return { level: 'Превосходный', color: '#38ef7d', emoji: '🌟' };
@@ -160,6 +185,33 @@ function EvaluationResults() {
         }
       }
     }
+  };
+
+  const comparisonData = {
+    labels: compareProducts.map((item) => item.product_name),
+    datasets: [
+      {
+        label: 'Последний индекс зрелости',
+        data: compareProducts.map((item) => item.overall_index),
+        backgroundColor: 'rgba(79, 172, 254, 0.7)',
+        borderColor: 'rgba(79, 172, 254, 1)',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const historyData = {
+    labels: historyPoints.map((point) => point.start_date),
+    datasets: [
+      {
+        label: 'Индекс зрелости по периодам',
+        data: historyPoints.map((point) => point.overall_index),
+        borderColor: 'rgba(118, 75, 162, 1)',
+        backgroundColor: 'rgba(118, 75, 162, 0.15)',
+        fill: true,
+        tension: 0.25,
+      },
+    ],
   };
 
   const handleDownloadPDF = async () => {
@@ -270,6 +322,56 @@ function EvaluationResults() {
           <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '18px', fontWeight: '700', color: maturityInfo.color }}>
             {completionPercentage.toFixed(1)}% от максимума
           </div>
+        </div>
+
+        <div className="chart-card">
+          <h3>📉 История индекса продукта</h3>
+          {historyPoints.length > 0 ? (
+            <div style={{ maxHeight: '400px', padding: '20px' }}>
+              <Line
+                data={historyData}
+                options={{
+                  responsive: true,
+                  plugins: { legend: { position: 'top' } },
+                  scales: { y: { beginAtZero: true, max: 10 } },
+                }}
+              />
+            </div>
+          ) : (
+            <p>Недостаточно завершенных сессий для построения истории.</p>
+          )}
+        </div>
+
+        <div className="chart-card">
+          <h3>📊 Сравнение нескольких продуктов</h3>
+          <label htmlFor="products-compare-select">Выберите продукты для сравнения:</label>
+          <select
+            id="products-compare-select"
+            multiple
+            value={selectedProductIds}
+            onChange={handleCompareSelection}
+            style={{ minHeight: '130px', marginBottom: '16px' }}
+          >
+            {productsList.map((item) => (
+              <option key={item.id} value={String(item.id)}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          {compareProducts.length > 0 ? (
+            <div style={{ maxHeight: '420px', padding: '20px' }}>
+              <Bar
+                data={comparisonData}
+                options={{
+                  responsive: true,
+                  plugins: { legend: { position: 'top' } },
+                  scales: { y: { beginAtZero: true, max: 10 } },
+                }}
+              />
+            </div>
+          ) : (
+            <p>Нет данных для сравнения по выбранным продуктам.</p>
+          )}
         </div>
       </div>
 

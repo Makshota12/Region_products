@@ -73,8 +73,8 @@ class EvaluationAnswerInline(admin.StackedInline):
 
 @admin.register(AssignedCriterion)
 class AssignedCriterionAdmin(admin.ModelAdmin):
-    list_display = ("id", "evaluation_session", "criterion", "assigned_to", "is_verified")
-    list_filter = ("is_verified", "criterion__domain", "evaluation_session__status")
+    list_display = ("id", "evaluation_session", "criterion", "assigned_to", "verification_status", "is_verified")
+    list_filter = ("verification_status", "is_verified", "criterion__domain", "evaluation_session__status")
     search_fields = (
         "criterion__name",
         "evaluation_session__product__name",

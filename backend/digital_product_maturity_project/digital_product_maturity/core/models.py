@@ -157,10 +157,23 @@ class EvaluationSession(models.Model):
         return 0
 
 class AssignedCriterion(models.Model):
+    VERIFICATION_STATUS_CHOICES = (
+        ('pending', 'Ожидает проверки'),
+        ('changes_requested', 'Запрошены уточнения'),
+        ('verified', 'Подтверждено'),
+    )
+
     evaluation_session = models.ForeignKey(EvaluationSession, on_delete=models.CASCADE, related_name='assigned_criteria', verbose_name="Оценочная сессия")
     criterion = models.ForeignKey(Criterion, on_delete=models.CASCADE, verbose_name="Критерий")
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='assigned_criteria', verbose_name="Назначено")
     is_verified = models.BooleanField(default=False, verbose_name="Верифицировано")
+    verification_status = models.CharField(
+        max_length=32,
+        choices=VERIFICATION_STATUS_CHOICES,
+        default='pending',
+        verbose_name="Статус верификации",
+    )
+    verification_comment = models.TextField(blank=True, null=True, verbose_name="Комментарий верификатора")
 
     class Meta:
         verbose_name = "Назначенный критерий"

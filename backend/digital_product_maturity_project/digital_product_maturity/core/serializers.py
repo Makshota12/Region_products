@@ -49,7 +49,8 @@ class AssignedCriterionReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignedCriterion
         fields = ['id', 'evaluation_session', 'criterion', 'criterion_name', 'criterion_description', 
-                  'criterion_weight', 'domain_name', 'assigned_to', 'is_verified', 'answer']
+                  'criterion_weight', 'domain_name', 'assigned_to', 'is_verified', 'verification_status',
+                  'verification_comment', 'answer']
 
 
 class RoleSerializer(serializers.ModelSerializer):

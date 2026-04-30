@@ -13,6 +13,8 @@ function EvaluationInput() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState({ completed: 0, total: 0, percentage: 0 });
+  const [currentUserRole, setCurrentUserRole] = useState('');
+  const [verificationNotes, setVerificationNotes] = useState({});
 
   useEffect(() => {
     const loadData = async () => {
@@ -44,6 +46,8 @@ function EvaluationInput() {
               metric_value: ac.answer.metric_value || '',
               comment: ac.answer.comment || '',
               answerId: ac.answer.id, // Сохраняем ID для обновления
+              file_evidence: null,
+              existing_file_url: ac.answer.file_evidence || '',
             };
             completedCount++;
           } else {
@@ -52,6 +56,8 @@ function EvaluationInput() {
               metric_value: '',
               comment: '',
               answerId: ac.answer?.id || null,
+              file_evidence: null,
+              existing_file_url: ac.answer?.file_evidence || '',
             };
           }
         });
@@ -75,6 +81,18 @@ function EvaluationInput() {
     
     loadData();
   }, [sessionId]);
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const response = await axios.get('/api/auth/user/');
+        setCurrentUserRole(response.data?.role || '');
+      } catch (error) {
+        console.error('Ошибка при загрузке текущего пользователя:', error);
+      }
+    };
+    loadCurrentUser();
+  }, []);
 
   const handleAnswerChange = (assignedCriterionId, field, value) => {
     setAnswers(prevAnswers => {
@@ -120,12 +138,16 @@ function EvaluationInput() {
         }
 
         // Подготавливаем данные для отправки
-        const dataToSend = {
-          assigned_criterion: ac.id,
-          score_value: parseInt(answerData.score_value),
-          metric_value: answerData.metric_value || null,
-          comment: answerData.comment || ''
-        };
+        const dataToSend = new FormData();
+        dataToSend.append('assigned_criterion', ac.id);
+        dataToSend.append('score_value', parseInt(answerData.score_value, 10));
+        dataToSend.append('comment', answerData.comment || '');
+        if (answerData.metric_value !== '' && answerData.metric_value !== null && answerData.metric_value !== undefined) {
+          dataToSend.append('metric_value', answerData.metric_value);
+        }
+        if (answerData.file_evidence instanceof File) {
+          dataToSend.append('file_evidence', answerData.file_evidence);
+        }
 
         try {
           // Проверяем, есть ли уже ответ (из состояния или из данных сервера)
@@ -134,7 +156,7 @@ function EvaluationInput() {
           if (existingAnswerId) {
             // Обновляем существующий ответ
             console.log(`Обновляем ответ ${existingAnswerId} для критерия ${ac.id}`);
-            await axios.put(`/api/evaluation-answers/${existingAnswerId}/`, dataToSend);
+            await axios.patch(`/api/evaluation-answers/${existingAnswerId}/`, dataToSend);
           } else {
             // Создаем новый ответ
             console.log(`Создаем новый ответ для критерия ${ac.id}`);
@@ -191,6 +213,40 @@ function EvaluationInput() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const canVerify = currentUserRole === 'Эксперт/Аудитор' || currentUserRole === 'Администратор системы';
+
+  const handleVerify = async (assignedCriterionId) => {
+    try {
+      await axios.post(`/api/assigned-criteria/${assignedCriterionId}/verify/`, {
+        comment: verificationNotes[assignedCriterionId] || '',
+      });
+      alert('✅ Критерий подтвержден');
+      window.location.reload();
+    } catch (error) {
+      console.error('Ошибка при подтверждении критерия:', error);
+      alert('❌ Не удалось подтвердить критерий');
+    }
+  };
+
+  const handleRequestChanges = async (assignedCriterionId) => {
+    try {
+      await axios.post(`/api/assigned-criteria/${assignedCriterionId}/request_changes/`, {
+        comment: verificationNotes[assignedCriterionId] || '',
+      });
+      alert('✅ Запрос на уточнение отправлен');
+      window.location.reload();
+    } catch (error) {
+      console.error('Ошибка при запросе уточнений:', error);
+      alert('❌ Не удалось отправить запрос на уточнение');
+    }
+  };
+
+  const getVerificationLabel = (status) => {
+    if (status === 'verified') return 'Подтверждено';
+    if (status === 'changes_requested') return 'Запрошены уточнения';
+    return 'Ожидает проверки';
   };
 
   if (loading) {
@@ -266,6 +322,23 @@ function EvaluationInput() {
                   <p className="criterion-description">{ac.criterion_description}</p>
                 )}
 
+                <div style={{ marginBottom: '12px' }}>
+                  <span className={`status-badge ${
+                    ac.verification_status === 'verified'
+                      ? 'status-completed'
+                      : ac.verification_status === 'changes_requested'
+                        ? 'status-in-progress'
+                        : 'status-pending'
+                  }`}>
+                    {getVerificationLabel(ac.verification_status)}
+                  </span>
+                  {ac.verification_comment && (
+                    <p style={{ marginTop: '8px', color: '#555' }}>
+                      Комментарий верификатора: {ac.verification_comment}
+                    </p>
+                  )}
+                </div>
+
                 <div className="answer-inputs">
                   <div className="input-group">
                     <label>⭐ Оценка (1-10):</label>
@@ -299,6 +372,51 @@ function EvaluationInput() {
                       rows="3"
                     />
                   </div>
+
+                  <div className="input-group">
+                    <label>📎 Файл-доказательство (опционально):</label>
+                    {answers[ac.id]?.existing_file_url && (
+                      <p style={{ marginBottom: '8px' }}>
+                        Текущий файл:{' '}
+                        <a href={answers[ac.id].existing_file_url} target="_blank" rel="noreferrer">
+                          Открыть
+                        </a>
+                      </p>
+                    )}
+                    <input
+                      type="file"
+                      onChange={(e) => handleAnswerChange(ac.id, 'file_evidence', e.target.files?.[0] || null)}
+                    />
+                  </div>
+
+                  {canVerify && (
+                    <div className="input-group">
+                      <label>🧾 Комментарий верификатора:</label>
+                      <textarea
+                        value={verificationNotes[ac.id] || ''}
+                        onChange={(e) =>
+                          setVerificationNotes((prev) => ({ ...prev, [ac.id]: e.target.value }))
+                        }
+                        placeholder="Комментарий к проверке (опционально)"
+                        rows="2"
+                      />
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                          type="button"
+                          className="secondary-btn"
+                          onClick={() => handleRequestChanges(ac.id)}
+                        >
+                          🔁 Запросить уточнение
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleVerify(ac.id)}
+                        >
+                          ✅ Подтвердить
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
