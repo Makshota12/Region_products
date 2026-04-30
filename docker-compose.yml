@@ -169,6 +169,8 @@ services:
 
   kibana-setup:
     image: curlimages/curl:8.8.0
+    volumes:
+      - ./monitoring/kibana/diploma-dashboard.ndjson:/diploma-dashboard.ndjson:ro
     command:
       - /bin/sh
       - -c
@@ -178,10 +180,7 @@ services:
           i=$$((i+1));
           sleep 5;
         done;
-        curl -sS -X POST "http://kibana:5601/api/data_views/data_view" \
-          -H "Content-Type: application/json" \
-          -H "kbn-xsrf: true" \
-          -d '{"data_view":{"title":"app-logs-*","name":"Application Logs","timeFieldName":"@timestamp"}}' || true;
+        curl -sS -X POST "http://kibana:5601/api/saved_objects/_import?overwrite=true" -H "kbn-xsrf: true" --form "file=@/diploma-dashboard.ndjson" || true;
     depends_on:
       - kibana
     restart: "no"
