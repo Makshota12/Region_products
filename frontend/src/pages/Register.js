@@ -63,12 +63,12 @@ function Register() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>📝 Регистрация</h1>
+        <h1>Регистрация</h1>
         <p className="auth-subtitle">Создайте аккаунт для доступа к системе</p>
 
         {error && (
           <div className="error">
-            ❌ {error}
+            {error}
           </div>
         )}
 
@@ -115,7 +115,7 @@ function Register() {
                 className="password-toggle"
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+                {showPassword ? 'Скрыть' : 'Показать'}
               </button>
             </div>
           </div>
@@ -136,13 +136,13 @@ function Register() {
                 className="password-toggle"
                 onClick={() => setShowPassword2(!showPassword2)}
               >
-                {showPassword2 ? '👁️' : '👁️‍🗨️'}
+                {showPassword2 ? 'Скрыть' : 'Показать'}
               </button>
             </div>
           </div>
 
           <button type="submit" disabled={loading} style={{ width: '100%' }}>
-            {loading ? '⏳ Регистрация...' : '✅ Зарегистрироваться'}
+            {loading ? 'Регистрация...' : 'Зарегистрироваться'}
           </button>
         </form>
 

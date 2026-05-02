@@ -46,12 +46,12 @@ function ProductForm() {
 
     request
       .then(response => {
-        alert(id ? '✅ Продукт успешно обновлен!' : '✅ Продукт успешно создан!');
+        alert(id ? ' Продукт успешно обновлен!' : ' Продукт успешно создан!');
         navigate('/');
       })
       .catch(error => {
         console.error('Ошибка при сохранении продукта:', error);
-        alert('❌ Ошибка при сохранении продукта');
+        alert(' Ошибка при сохранении продукта');
       })
       .finally(() => {
         setLoading(false);
@@ -66,11 +66,11 @@ function ProductForm() {
         </Link>
       </div>
 
-      <h1>{id ? '✏️ Редактирование продукта' : '➕ Добавление продукта'}</h1>
+      <h1>{id ? ' Редактирование продукта' : ' Добавление продукта'}</h1>
       
       <form onSubmit={handleSubmit}>
         <div>
-          <label>📦 Наименование продукта:</label>
+          <label> Наименование продукта:</label>
           <input
             type="text"
             name="name"
@@ -82,7 +82,7 @@ function ProductForm() {
         </div>
 
         <div>
-          <label>📝 Описание:</label>
+          <label> Описание:</label>
           <textarea
             name="description"
             value={formData.description}
@@ -93,7 +93,7 @@ function ProductForm() {
         </div>
 
         <div>
-          <label>🏢 Ответственное ведомство/владелец:</label>
+          <label> Ответственное ведомство/владелец:</label>
           <input
             type="text"
             name="department_owner"
@@ -105,7 +105,7 @@ function ProductForm() {
         </div>
 
         <div>
-          <label>🔗 Ссылка на продукт:</label>
+          <label> Ссылка на продукт:</label>
           <input
             type="url"
             name="product_link"
@@ -116,7 +116,7 @@ function ProductForm() {
         </div>
 
         <div>
-          <label>📅 Дата запуска:</label>
+          <label> Дата запуска:</label>
           <input
             type="date"
             name="launch_date"
@@ -135,18 +135,18 @@ function ProductForm() {
               id="is_archived"
             />
             <label htmlFor="is_archived" style={{ margin: 0 }}>
-              📥 Отправить в архив
+               Отправить в архив
             </label>
           </div>
         )}
 
         <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
           <button type="submit" disabled={loading}>
-            {loading ? '💾 Сохранение...' : (id ? '💾 Сохранить изменения' : '➕ Создать продукт')}
+            {loading ? ' Сохранение...' : (id ? ' Сохранить изменения' : ' Создать продукт')}
           </button>
           <Link to="/">
             <button type="button" className="secondary-btn">
-              ❌ Отмена
+               Отмена
             </button>
           </Link>
         </div>

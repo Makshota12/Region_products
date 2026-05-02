@@ -64,22 +64,22 @@ function App() {
           <nav>
             <ul>
               <li>
-                <Link to="/">📦 Продукты</Link>
+                <Link to="/">Продукты</Link>
               </li>
               <li>
-                <Link to="/add-product">➕ Добавить продукт</Link>
+                <Link to="/add-product">Добавить продукт</Link>
               </li>
               <li>
-                <Link to="/domains">⚙️ Модель оценки</Link>
+                <Link to="/domains">Модель оценки</Link>
               </li>
               <li>
-                <Link to="/evaluation-sessions">📊 Сессии оценки</Link>
+                <Link to="/evaluation-sessions">Сессии оценки</Link>
               </li>
               <li>
                 {isLoggedIn ? (
-                  <Link to="/profile">👤 {username}</Link>
+                  <Link to="/profile">{username}</Link>
                 ) : (
-                  <Link to="/login">🔐 Вход</Link>
+                  <Link to="/login">Вход</Link>
                 )}
               </li>
               <li className="nav-actions">

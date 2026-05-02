@@ -58,11 +58,11 @@ function ProductDetail() {
   };
 
   if (loading) {
-    return <div className="loading">⏳ Загрузка...</div>;
+    return <div className="loading">Загрузка...</div>;
   }
 
   if (!product) {
-    return <div className="error">❌ Продукт не найден</div>;
+    return <div className="error">Продукт не найден</div>;
   }
 
   return (
@@ -80,7 +80,7 @@ function ProductDetail() {
 
       <div className="product-info-card">
         <div className="info-section">
-          <h2>📋 Основная информация</h2>
+          <h2>Основная информация</h2>
           <div className="info-grid">
             <div className="info-item">
               <strong>Наименование:</strong>
@@ -103,7 +103,7 @@ function ProductDetail() {
                 <strong>Ссылка:</strong>
                 <p>
                   <a href={product.product_link} target="_blank" rel="noopener noreferrer">
-                    {product.product_link} 🔗
+                    {product.product_link}
                   </a>
                 </p>
               </div>
@@ -112,14 +112,14 @@ function ProductDetail() {
         </div>
 
         <div className="info-section">
-          <h2>📊 История оценок</h2>
+          <h2>История оценок</h2>
           {evaluations.length > 0 ? (
             <div className="evaluations-list">
               {evaluations.map(evaluation => (
                 <div key={evaluation.id} className="evaluation-card">
                   <div className="evaluation-header">
                     <span className="evaluation-date">
-                      📅 {new Date(evaluation.start_date).toLocaleDateString('ru-RU')}
+                      {new Date(evaluation.start_date).toLocaleDateString('ru-RU')}
                     </span>
                     <span className={`status-badge status-${evaluation.status}`}>
                       {evaluation.status === 'pending' && 'В ожидании'}
@@ -146,20 +146,20 @@ function ProductDetail() {
           )}
           <div style={{ marginTop: '20px' }}>
             <Link to="/start-evaluation">
-              <button>➕ Создать новую оценку</button>
+              <button>Создать новую оценку</button>
             </Link>
           </div>
         </div>
 
         <div className="action-buttons">
           <Link to={`/edit-product/${id}`}>
-            <button>✏️ Редактировать</button>
+            <button>Редактировать</button>
           </Link>
           <button onClick={handleArchive} className="secondary-btn">
-            {product.is_archived ? '📤 Восстановить' : '📥 Архивировать'}
+            {product.is_archived ? 'Восстановить' : 'Архивировать'}
           </button>
           <button onClick={handleDelete} className="delete-btn">
-            🗑️ Удалить
+            Удалить
           </button>
         </div>
       </div>

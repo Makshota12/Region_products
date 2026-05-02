@@ -22,26 +22,26 @@ function DomainList() {
     if (window.confirm(`Вы уверены, что хотите удалить домен "${name}"?`)) {
       axios.delete(`/api/domains/${id}/`)
         .then(() => {
-          alert('✅ Домен успешно удален');
+          alert('Домен успешно удален');
           setDomains(domains.filter(d => d.id !== id));
         })
         .catch(error => {
           console.error('Ошибка при удалении домена:', error);
-          alert('❌ Не удалось удалить домен');
+          alert('Не удалось удалить домен');
         });
     }
   };
 
   if (loading) {
-    return <div className="loading">⏳ Загрузка доменов оценки...</div>;
+    return <div className="loading">Загрузка доменов оценки...</div>;
   }
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h1>⚙️ Модель оценки - Домены</h1>
+        <h1>Модель оценки - Домены</h1>
         <Link to="/add-domain">
-          <button>➕ Добавить домен</button>
+          <button>Добавить домен</button>
         </Link>
       </div>
 
@@ -53,7 +53,7 @@ function DomainList() {
         <div className="empty-state">
           <p>Пока нет доменов оценки</p>
           <Link to="/add-domain">
-            <button>➕ Создать первый домен</button>
+            <button>Создать первый домен</button>
           </Link>
         </div>
       ) : (
@@ -61,7 +61,7 @@ function DomainList() {
           {domains.map(domain => (
             <div key={domain.id} className="domain-card">
               <div className="domain-card-header">
-                <h3>📊 {domain.name}</h3>
+                <h3>{domain.name}</h3>
                 <span className="domain-weight-badge">Вес: {domain.weight}%</span>
               </div>
               
@@ -74,19 +74,19 @@ function DomainList() {
               <div className="domain-card-footer">
                 <Link to={`/domains/${domain.id}/criteria`}>
                   <button className="view-btn">
-                    📋 Критерии
+                    Критерии
                   </button>
                 </Link>
                 <Link to={`/edit-domain/${domain.id}`}>
                   <button className="edit-btn">
-                    ✏️ Редактировать
+                    Редактировать
                   </button>
                 </Link>
                 <button 
                   onClick={() => handleDelete(domain.id, domain.name)} 
                   className="delete-btn"
                 >
-                  🗑️ Удалить
+                  Удалить
                 </button>
               </div>
             </div>

@@ -28,18 +28,18 @@ function CriterionList() {
     if (window.confirm(`Вы уверены, что хотите удалить критерий "${name}"?`)) {
       axios.delete(`/api/criteria/${id}/`)
         .then(() => {
-          alert('✅ Критерий успешно удален');
+          alert('Критерий успешно удален');
           setCriteria(criteria.filter(c => c.id !== id));
         })
         .catch(error => {
           console.error('Ошибка при удалении критерия:', error);
-          alert('❌ Не удалось удалить критерий');
+          alert('Не удалось удалить критерий');
         });
     }
   };
 
   if (loading) {
-    return <div className="loading">⏳ Загрузка критериев...</div>;
+    return <div className="loading">Загрузка критериев...</div>;
   }
 
   return (
@@ -52,7 +52,7 @@ function CriterionList() {
 
       {domain && (
         <>
-          <h1>📋 Критерии домена: {domain.name}</h1>
+          <h1>Критерии домена: {domain.name}</h1>
           <div className="domain-info-banner" style={{ marginBottom: '30px' }}>
             <p style={{ margin: 0 }}>
               <strong>Описание:</strong> {domain.description || 'Нет описания'}
@@ -66,7 +66,7 @@ function CriterionList() {
 
       <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
         <Link to={`/domains/${domainId}/add-criterion`}>
-          <button>➕ Добавить критерий</button>
+          <button>Добавить критерий</button>
         </Link>
       </div>
 
@@ -74,7 +74,7 @@ function CriterionList() {
         <div className="empty-state">
           <p>Пока нет критериев для этого домена</p>
           <Link to={`/domains/${domainId}/add-criterion`}>
-            <button>➕ Создать первый критерий</button>
+            <button>Создать первый критерий</button>
           </Link>
         </div>
       ) : (
@@ -93,14 +93,14 @@ function CriterionList() {
               <div className="criterion-footer">
                 <Link to={`/edit-criterion/${criterion.id}`}>
                   <button className="edit-btn">
-                    ✏️ Редактировать
+                    Редактировать
                   </button>
                 </Link>
                 <button 
                   onClick={() => handleDelete(criterion.id, criterion.name)} 
                   className="delete-btn"
                 >
-                  🗑️ Удалить
+                  Удалить
                 </button>
               </div>
             </div>

@@ -28,7 +28,6 @@ export default function ThemeSwitcher() {
         aria-expanded={open}
         title="Сменить тему оформления"
       >
-        <span className="theme-switcher-emoji" aria-hidden="true">{current.emoji}</span>
         <span className="theme-switcher-label">{current.label}</span>
         <span className="theme-switcher-arrow" aria-hidden="true">▾</span>
       </button>
@@ -47,7 +46,6 @@ export default function ThemeSwitcher() {
                   setOpen(false);
                 }}
               >
-                <span className="theme-switcher-emoji" aria-hidden="true">{t.emoji}</span>
                 <span className="theme-switcher-option-label">{t.label}</span>
                 {t.id === theme && <span className="theme-switcher-check" aria-hidden="true">✓</span>}
               </button>

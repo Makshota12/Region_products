@@ -42,12 +42,12 @@ function DomainForm() {
 
     request
       .then(response => {
-        alert(id ? '✅ Домен успешно обновлен!' : '✅ Домен успешно создан!');
+        alert(id ? ' Домен успешно обновлен!' : ' Домен успешно создан!');
         navigate('/domains');
       })
       .catch(error => {
         console.error('Ошибка при сохранении домена:', error);
-        alert('❌ Ошибка при сохранении домена');
+        alert(' Ошибка при сохранении домена');
       })
       .finally(() => {
         setLoading(false);
@@ -62,7 +62,7 @@ function DomainForm() {
         </Link>
       </div>
 
-      <h1>{id ? '✏️ Редактирование домена' : '➕ Добавление домена'}</h1>
+      <h1>{id ? ' Редактирование домена' : ' Добавление домена'}</h1>
       
       <p style={{ color: '#666', marginBottom: '30px' }}>
         {id 
@@ -73,7 +73,7 @@ function DomainForm() {
 
       <form onSubmit={handleSubmit}>
         <div>
-          <label>📊 Название домена:</label>
+          <label> Название домена:</label>
           <input
             type="text"
             name="name"
@@ -85,7 +85,7 @@ function DomainForm() {
         </div>
 
         <div>
-          <label>📝 Описание:</label>
+          <label> Описание:</label>
           <textarea
             name="description"
             value={formData.description}
@@ -96,7 +96,7 @@ function DomainForm() {
         </div>
 
         <div>
-          <label>⚖️ Вес в общей оценке (%):</label>
+          <label> Вес в общей оценке (%):</label>
           <input
             type="number"
             name="weight"
@@ -115,11 +115,11 @@ function DomainForm() {
 
         <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
           <button type="submit" disabled={loading}>
-            {loading ? '💾 Сохранение...' : (id ? '💾 Сохранить изменения' : '➕ Создать домен')}
+            {loading ? ' Сохранение...' : (id ? ' Сохранить изменения' : ' Создать домен')}
           </button>
           <Link to="/domains">
             <button type="button" className="secondary-btn">
-              ❌ Отмена
+               Отмена
             </button>
           </Link>
         </div>

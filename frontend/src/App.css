@@ -59,6 +59,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'HH Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: var(--page-bg);
   color: var(--body-text);
+  font-size: 20px;
+  line-height: 1.55;
   min-height: 100vh;
   transition: background 0.3s ease, color 0.3s ease;
 }
@@ -91,16 +93,16 @@ nav ul {
 
 nav li {
   flex: 1;
-  min-width: 150px;
+  min-width: 220px;
 }
 
 nav a {
   display: block;
   color: var(--on-primary);
   text-decoration: none;
-  padding: 20px 25px;
-  font-weight: 500;
-  font-size: 15px;
+  padding: 30px 36px;
+  font-weight: 600;
+  font-size: 24px;
   text-align: center;
   transition: all 0.3s ease;
   border-bottom: 3px solid transparent;
@@ -137,20 +139,21 @@ nav a[aria-current="page"] {
 
 /* Main Content */
 .content {
-  max-width: 1200px;
-  margin: 40px auto;
-  padding: 30px;
+  width: calc(100vw - 32px);
+  max-width: none;
+  margin: 16px;
+  padding: 40px;
   background: white;
   border-radius: 15px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  min-height: calc(100vh - 200px);
+  min-height: calc(100vh - 150px);
 }
 
 /* Headers */
 h1 {
   color: var(--heading);
   margin-bottom: 30px;
-  font-size: 32px;
+  font-size: 44px;
   font-weight: 700;
   border-bottom: 3px solid var(--primary);
   padding-bottom: 15px;
@@ -159,13 +162,13 @@ h1 {
 h2 {
   color: var(--subheading);
   margin: 25px 0 15px 0;
-  font-size: 24px;
+  font-size: 34px;
 }
 
 h3 {
   color: #555;
   margin: 20px 0 10px 0;
-  font-size: 18px;
+  font-size: 28px;
 }
 
 /* Forms */
@@ -186,7 +189,7 @@ label {
   margin-bottom: 8px;
   color: #333;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 20px;
 }
 
 input[type="text"],
@@ -198,10 +201,10 @@ input[type="number"],
 textarea,
 select {
   width: 100%;
-  padding: 12px 15px;
+  padding: 16px 18px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 19px;
   transition: all 0.3s ease;
   background: white;
 }
@@ -225,10 +228,10 @@ button {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: var(--on-primary);
   border: none;
-  padding: 12px 30px;
+  padding: 16px 36px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 21px;
   font-weight: 600;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
@@ -277,13 +280,14 @@ th {
   padding: 15px;
   text-align: left;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 18px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 td {
   padding: 15px;
+  font-size: 18px;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -408,8 +412,14 @@ a:not(nav a):hover {
   }
   
   .content {
+    width: auto;
     margin: 20px 10px;
     padding: 20px;
+  }
+
+  nav a {
+    font-size: 18px;
+    padding: 18px 20px;
   }
   
   h1 {
@@ -644,8 +654,8 @@ a:not(nav a):hover {
 
 /* Auth Pages */
 .auth-container {
-  max-width: 500px;
-  margin: 40px auto;
+  max-width: none;
+  margin: 20px 0;
   padding: 20px;
 }
 
@@ -1197,7 +1207,7 @@ a:not(nav a):hover {
 
 .password-input-wrapper input {
   width: 100%;
-  padding-right: 46px;
+  padding-right: 120px;
   margin-bottom: 0;
 }
 
@@ -1206,19 +1216,20 @@ a:not(nav a):hover {
   top: 50%;
   right: 12px;
   transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  min-width: 88px;
+  height: 34px;
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: 1px solid transparent;
   color: #667085;
-  font-size: 16px;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  padding: 0;
+  padding: 0 10px;
   transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
   box-shadow: none;
   margin: 0;
@@ -1396,7 +1407,7 @@ small {
 
 /* Profile Page Styles */
 .profile-container {
-  max-width: 1000px;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -1660,7 +1671,7 @@ small {
   border: 1px solid rgba(0, 0, 0, 0.15);
   padding: 8px 14px;
   border-radius: 999px;
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: none;
@@ -1724,7 +1735,7 @@ small {
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
-  font-size: 14px;
+  font-size: 19px;
   font-weight: 500;
   box-shadow: none;
   margin: 0;
@@ -1762,6 +1773,14 @@ nav li.nav-actions {
   align-items: center;
   padding: 0 20px;
   gap: 12px;
+}
+
+.theme-switcher-emoji,
+.link-icon,
+.stat-icon,
+.domain-emoji,
+.maturity-icon {
+  display: none !important;
 }
 
 @media (max-width: 768px) {

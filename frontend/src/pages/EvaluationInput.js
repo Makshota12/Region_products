@@ -172,9 +172,9 @@ function EvaluationInput() {
       }
 
       if (errors.length > 0) {
-        alert(`⚠️ Сохранено ${savedCount} оценок, но были ошибки:\n${errors.join('\n')}`);
+        alert(`Сохранено ${savedCount} оценок, но были ошибки:\n${errors.join('\n')}`);
       } else if (savedCount === 0) {
-        alert('⚠️ Нет оценок для сохранения. Заполните хотя бы одну оценку.');
+        alert('Нет оценок для сохранения. Заполните хотя бы одну оценку.');
         return;
       } else {
         // Проверяем, все ли критерии заполнены
@@ -195,13 +195,13 @@ function EvaluationInput() {
           });
           
           if (allFilled) {
-            alert(`✅ Все ${savedCount} оценок сохранены! Оценка завершена.`);
+            alert(`Все ${savedCount} оценок сохранены! Оценка завершена.`);
           } else {
-            alert(`✅ Сохранено ${savedCount} из ${totalCount} оценок. Статус: В процессе`);
+            alert(`Сохранено ${savedCount} из ${totalCount} оценок. Статус: В процессе`);
           }
         } catch (err) {
           console.error('Ошибка обновления статуса:', err);
-          alert(`✅ Успешно сохранено ${savedCount} оценок!`);
+          alert(`Успешно сохранено ${savedCount} оценок!`);
         }
         
         // Перезагружаем данные
@@ -209,7 +209,7 @@ function EvaluationInput() {
       }
     } catch (error) {
       console.error('Общая ошибка при сохранении:', error);
-      alert('❌ Критическая ошибка при сохранении оценок');
+      alert('Критическая ошибка при сохранении оценок');
     } finally {
       setSaving(false);
     }
@@ -222,11 +222,11 @@ function EvaluationInput() {
       await axios.post(`/api/assigned-criteria/${assignedCriterionId}/verify/`, {
         comment: verificationNotes[assignedCriterionId] || '',
       });
-      alert('✅ Критерий подтвержден');
+      alert('Критерий подтвержден');
       window.location.reload();
     } catch (error) {
       console.error('Ошибка при подтверждении критерия:', error);
-      alert('❌ Не удалось подтвердить критерий');
+      alert('Не удалось подтвердить критерий');
     }
   };
 
@@ -235,11 +235,11 @@ function EvaluationInput() {
       await axios.post(`/api/assigned-criteria/${assignedCriterionId}/request_changes/`, {
         comment: verificationNotes[assignedCriterionId] || '',
       });
-      alert('✅ Запрос на уточнение отправлен');
+      alert('Запрос на уточнение отправлен');
       window.location.reload();
     } catch (error) {
       console.error('Ошибка при запросе уточнений:', error);
-      alert('❌ Не удалось отправить запрос на уточнение');
+      alert('Не удалось отправить запрос на уточнение');
     }
   };
 
@@ -250,11 +250,11 @@ function EvaluationInput() {
   };
 
   if (loading) {
-    return <div className="loading">⏳ Загрузка оценочной сессии...</div>;
+    return <div className="loading">Загрузка оценочной сессии...</div>;
   }
 
   if (!session) {
-    return <div className="error">❌ Сессия не найдена</div>;
+    return <div className="error">Сессия не найдена</div>;
   }
 
   return (
@@ -265,11 +265,11 @@ function EvaluationInput() {
         </Link>
       </div>
 
-      <h1>📝 Оценка продукта</h1>
+      <h1>Оценка продукта</h1>
       
       {product && (
         <div className="product-info-banner">
-          <h2>📦 {product.name}</h2>
+          <h2>{product.name}</h2>
           <p>{product.description}</p>
         </div>
       )}
@@ -277,7 +277,7 @@ function EvaluationInput() {
       {/* Прогресс выполнения */}
       <div className="progress-card">
         <div className="progress-header">
-          <h3>📊 Прогресс оценки</h3>
+          <h3>Прогресс оценки</h3>
           <span className="progress-text">
             {progress.completed} из {progress.total} критериев оценено
           </span>
@@ -295,7 +295,7 @@ function EvaluationInput() {
       <form onSubmit={handleSubmit}>
         {assignedCriteria.length === 0 ? (
           <div className="empty-state">
-            <p>❌ Нет критериев для оценки</p>
+            <p>Нет критериев для оценки</p>
             <p style={{ fontSize: '14px', color: '#666' }}>
               Сначала настройте модель оценки и назначьте критерии
             </p>
@@ -309,7 +309,6 @@ function EvaluationInput() {
               <div key={ac.id} className={`criterion-card ${hasAnswer ? 'criterion-completed' : ''}`}>
                 <div className="criterion-header">
                   <h3>
-                    {hasAnswer && <span style={{color: '#27ae60'}}>✅ </span>}
                     {ac.criterion_name || 'Критерий'}
                   </h3>
                   <div className="criterion-meta">
@@ -341,7 +340,7 @@ function EvaluationInput() {
 
                 <div className="answer-inputs">
                   <div className="input-group">
-                    <label>⭐ Оценка (1-10):</label>
+                    <label>Оценка (1-10):</label>
                     <input
                       type="number"
                       min="1"
@@ -353,7 +352,7 @@ function EvaluationInput() {
                   </div>
 
                   <div className="input-group">
-                    <label>📈 Числовая метрика (опционально):</label>
+                    <label>Числовая метрика (опционально):</label>
                     <input
                       type="number"
                       step="0.01"
@@ -364,7 +363,7 @@ function EvaluationInput() {
                   </div>
 
                   <div className="input-group">
-                    <label>💬 Комментарий:</label>
+                    <label>Комментарий:</label>
                     <textarea
                       value={answers[ac.id]?.comment || ''}
                       onChange={(e) => handleAnswerChange(ac.id, 'comment', e.target.value)}
@@ -374,7 +373,7 @@ function EvaluationInput() {
                   </div>
 
                   <div className="input-group">
-                    <label>📎 Файл-доказательство (опционально):</label>
+                    <label>Файл-доказательство (опционально):</label>
                     {answers[ac.id]?.existing_file_url && (
                       <p style={{ marginBottom: '8px' }}>
                         Текущий файл:{' '}
@@ -391,7 +390,7 @@ function EvaluationInput() {
 
                   {canVerify && (
                     <div className="input-group">
-                      <label>🧾 Комментарий верификатора:</label>
+                      <label>Комментарий верификатора:</label>
                       <textarea
                         value={verificationNotes[ac.id] || ''}
                         onChange={(e) =>
@@ -406,13 +405,13 @@ function EvaluationInput() {
                           className="secondary-btn"
                           onClick={() => handleRequestChanges(ac.id)}
                         >
-                          🔁 Запросить уточнение
+                          Запросить уточнение
                         </button>
                         <button
                           type="button"
                           onClick={() => handleVerify(ac.id)}
                         >
-                          ✅ Подтвердить
+                          Подтвердить
                         </button>
                       </div>
                     </div>
@@ -426,11 +425,11 @@ function EvaluationInput() {
         {assignedCriteria.length > 0 && (
           <div style={{ marginTop: '30px', display: 'flex', gap: '10px' }}>
             <button type="submit" disabled={saving || progress.percentage === 0}>
-              {saving ? '💾 Сохранение...' : '💾 Сохранить оценки'}
+              {saving ? 'Сохранение...' : 'Сохранить оценки'}
             </button>
             <Link to={`/evaluation-session/${sessionId}/results`}>
               <button type="button" className="secondary-btn">
-                📊 Посмотреть результаты
+                Посмотреть результаты
               </button>
             </Link>
           </div>

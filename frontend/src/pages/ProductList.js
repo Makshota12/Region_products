@@ -19,15 +19,15 @@ function ProductList() {
   }, []);
 
   if (loading) {
-    return <div className="loading">⏳ Загрузка продуктов...</div>;
+    return <div className="loading">Загрузка продуктов...</div>;
   }
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h1>📦 Цифровые продукты региона</h1>
+        <h1>Цифровые продукты региона</h1>
         <Link to="/add-product">
-          <button>➕ Добавить продукт</button>
+          <button>Добавить продукт</button>
         </Link>
       </div>
 
@@ -35,7 +35,7 @@ function ProductList() {
         <div className="empty-state">
           <p>Пока нет добавленных продуктов</p>
           <Link to="/add-product">
-            <button>➕ Добавить первый продукт</button>
+            <button>Добавить первый продукт</button>
           </Link>
         </div>
       ) : (
@@ -55,12 +55,12 @@ function ProductList() {
                   </p>
                   <div className="product-meta">
                     <div className="meta-item">
-                      <span className="meta-label">🏢 Владелец:</span>
+                      <span className="meta-label">Владелец:</span>
                       <span className="meta-value">{product.department_owner}</span>
                     </div>
                     {product.launch_date && (
                       <div className="meta-item">
-                        <span className="meta-label">📅 Запуск:</span>
+                        <span className="meta-label">Запуск:</span>
                         <span className="meta-value">
                           {new Date(product.launch_date).toLocaleDateString('ru-RU')}
                         </span>

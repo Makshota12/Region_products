@@ -31,7 +31,7 @@ function Login() {
       // Сохраняем токен в localStorage
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('username', formData.username);
-      alert(`✅ Добро пожаловать, ${formData.username}!`);
+      alert(`Добро пожаловать, ${formData.username}!`);
       navigate('/profile');
     } catch (error) {
       setError('Неверное имя пользователя или пароль');
@@ -56,7 +56,7 @@ function Login() {
 
       localStorage.setItem('token', apiResponse.data.token);
       localStorage.setItem('username', apiResponse.data.username);
-      alert(`✅ Добро пожаловать, ${apiResponse.data.username}!`);
+      alert(`Добро пожаловать, ${apiResponse.data.username}!`);
       navigate('/profile');
     } catch (err) {
       localStorage.removeItem('token');
@@ -115,12 +115,12 @@ function Login() {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1>🔐 Вход в систему</h1>
+        <h1>Вход в систему</h1>
         <p className="auth-subtitle">Войдите для доступа к системе оценки зрелости продуктов</p>
 
         {error && (
           <div className="error">
-            ❌ {error}
+            {error}
           </div>
         )}
 
@@ -155,13 +155,13 @@ function Login() {
                 aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                 title={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
               >
-                {showPassword ? '🙈' : '👁'}
+                {showPassword ? 'Скрыть' : 'Показать'}
               </button>
             </div>
           </div>
 
           <button type="submit" disabled={loading} style={{ width: '100%' }}>
-            {loading ? '⏳ Вход...' : '🔓 Войти'}
+            {loading ? 'Вход...' : 'Войти'}
           </button>
         </form>
 
@@ -184,7 +184,7 @@ function Login() {
       </div>
 
       <div className="auth-info">
-        <h3>💡 Тестовый доступ</h3>
+        <h3>Тестовый доступ</h3>
         <div className="test-credentials">
           <p><strong>Логин:</strong> admin</p>
           <p><strong>Пароль:</strong> admin123</p>

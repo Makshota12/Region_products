@@ -95,11 +95,11 @@ function EvaluationResults() {
   };
 
   const getMaturityLevel = (index) => {
-    if (index >= 8) return { level: 'Превосходный', color: '#38ef7d', emoji: '🌟' };
-    if (index >= 6) return { level: 'Высокий', color: '#4facfe', emoji: '⭐' };
-    if (index >= 4) return { level: 'Средний', color: '#f7b731', emoji: '💫' };
-    if (index >= 2) return { level: 'Низкий', color: '#f7797d', emoji: '⚠️' };
-    return { level: 'Критический', color: '#eb3349', emoji: '❌' };
+    if (index >= 8) return { level: 'Превосходный', color: '#38ef7d', emoji: '' };
+    if (index >= 6) return { level: 'Высокий', color: '#4facfe', emoji: '' };
+    if (index >= 4) return { level: 'Средний', color: '#f7b731', emoji: '' };
+    if (index >= 2) return { level: 'Низкий', color: '#f7797d', emoji: '' };
+    return { level: 'Критический', color: '#eb3349', emoji: '' };
   };
 
   const maturityInfo = getMaturityLevel(overallIndex);
@@ -240,11 +240,11 @@ function EvaluationResults() {
   };
 
   if (loading) {
-    return <div className="loading">⏳ Загрузка результатов оценки...</div>;
+    return <div className="loading">Загрузка результатов оценки...</div>;
   }
 
   if (!session) {
-    return <div className="error">❌ Сессия не найдена</div>;
+    return <div className="error">Сессия не найдена</div>;
   }
 
   return (
@@ -255,11 +255,11 @@ function EvaluationResults() {
         </Link>
       </div>
 
-      <h1>📊 Результаты оценки зрелости</h1>
+      <h1>Результаты оценки зрелости</h1>
 
       {product && (
         <div className="product-info-banner">
-          <h2>📦 {product.name}</h2>
+          <h2>{product.name}</h2>
           <p>{product.description}</p>
         </div>
       )}
@@ -278,7 +278,7 @@ function EvaluationResults() {
 
       {/* Статистика по доменам */}
       <div className="domains-stats">
-        <h2>📈 Оценки по доменам</h2>
+        <h2>Оценки по доменам</h2>
         <div className="domains-grid">
           {Object.entries(domainScores).map(([domain, score], index) => {
             const domainInfo = getMaturityLevel(score);
@@ -301,21 +301,21 @@ function EvaluationResults() {
       {/* Графики */}
       <div className="charts-container">
         <div className="chart-card">
-          <h3>🕸️ Радарный график</h3>
+          <h3>Радарный график</h3>
           <div style={{ maxHeight: '400px', padding: '20px' }}>
             <Radar data={radarData} options={chartOptions} />
           </div>
         </div>
 
         <div className="chart-card">
-          <h3>📊 Столбчатая диаграмма</h3>
+          <h3>Столбчатая диаграмма</h3>
           <div style={{ maxHeight: '400px', padding: '20px' }}>
             <Bar data={barData} options={{ ...chartOptions, scales: { y: { beginAtZero: true, max: 10 } } }} />
           </div>
         </div>
 
         <div className="chart-card">
-          <h3>🎯 Процент достижения</h3>
+          <h3>Процент достижения</h3>
           <div style={{ maxHeight: '300px', maxWidth: '300px', margin: '0 auto', padding: '20px' }}>
             <Doughnut data={doughnutData} />
           </div>
@@ -325,7 +325,7 @@ function EvaluationResults() {
         </div>
 
         <div className="chart-card">
-          <h3>📉 История индекса продукта</h3>
+          <h3>История индекса продукта</h3>
           {historyPoints.length > 0 ? (
             <div style={{ maxHeight: '400px', padding: '20px' }}>
               <Line
@@ -343,7 +343,7 @@ function EvaluationResults() {
         </div>
 
         <div className="chart-card">
-          <h3>📊 Сравнение нескольких продуктов</h3>
+          <h3>Сравнение нескольких продуктов</h3>
           <label htmlFor="products-compare-select">Выберите продукты для сравнения:</label>
           <select
             id="products-compare-select"
@@ -378,10 +378,10 @@ function EvaluationResults() {
       {/* Кнопки действий */}
       <div className="action-buttons">
         <button onClick={handleDownloadPDF} className="pdf-button">
-          📄 Скачать паспорт зрелости (PDF)
+          Скачать паспорт зрелости (PDF)
         </button>
         <Link to={`/evaluation-session/${sessionId}`}>
-          <button className="secondary-btn">✏️ Редактировать оценки</button>
+          <button className="secondary-btn">Редактировать оценки</button>
         </Link>
       </div>
     </div>

@@ -67,7 +67,7 @@ function CriterionForm() {
 
     request
       .then(response => {
-        alert(id ? '✅ Критерий успешно обновлен!' : '✅ Критерий успешно создан!');
+        alert(id ? ' Критерий успешно обновлен!' : ' Критерий успешно создан!');
         if (domainId) {
           navigate(`/domains/${domainId}/criteria`);
         } else {
@@ -76,7 +76,7 @@ function CriterionForm() {
       })
       .catch(error => {
         console.error('Ошибка при сохранении критерия:', error);
-        alert('❌ Ошибка при сохранении критерия');
+        alert(' Ошибка при сохранении критерия');
       })
       .finally(() => {
         setLoading(false);
@@ -93,7 +93,7 @@ function CriterionForm() {
         </Link>
       </div>
 
-      <h1>{id ? '✏️ Редактирование критерия' : '➕ Добавление критерия'}</h1>
+      <h1>{id ? ' Редактирование критерия' : ' Добавление критерия'}</h1>
       
       {currentDomain && (
         <div className="info-banner" style={{ marginBottom: '30px', padding: '15px', background: '#f8f9fa', borderRadius: '8px' }}>
@@ -104,7 +104,7 @@ function CriterionForm() {
       <form onSubmit={handleSubmit}>
         {!domainId && (
           <div>
-            <label>📊 Выберите домен:</label>
+            <label> Выберите домен:</label>
             <select
               name="domain"
               value={formData.domain}
@@ -122,7 +122,7 @@ function CriterionForm() {
         )}
 
         <div>
-          <label>📝 Название критерия:</label>
+          <label> Название критерия:</label>
           <input
             type="text"
             name="name"
@@ -134,7 +134,7 @@ function CriterionForm() {
         </div>
 
         <div>
-          <label>📄 Описание критерия:</label>
+          <label> Описание критерия:</label>
           <textarea
             name="description"
             value={formData.description}
@@ -145,7 +145,7 @@ function CriterionForm() {
         </div>
 
         <div>
-          <label>⚖️ Вес в домене (%):</label>
+          <label> Вес в домене (%):</label>
           <input
             type="number"
             name="weight"
@@ -164,11 +164,11 @@ function CriterionForm() {
 
         <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
           <button type="submit" disabled={loading}>
-            {loading ? '💾 Сохранение...' : (id ? '💾 Сохранить изменения' : '➕ Создать критерий')}
+            {loading ? ' Сохранение...' : (id ? ' Сохранить изменения' : ' Создать критерий')}
           </button>
           <Link to={backUrl}>
             <button type="button" className="secondary-btn">
-              ❌ Отмена
+               Отмена
             </button>
           </Link>
         </div>

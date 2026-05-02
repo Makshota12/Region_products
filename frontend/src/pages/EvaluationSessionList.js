@@ -59,22 +59,22 @@ function EvaluationSessionList() {
   };
 
   if (loading) {
-    return <div className="loading">⏳ Загрузка сессий оценки...</div>;
+    return <div className="loading">Загрузка сессий оценки...</div>;
   }
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h1>📊 Сессии оценки</h1>
+        <h1>Сессии оценки</h1>
         <Link to="/start-evaluation">
-          <button>➕ Начать новую оценку</button>
+          <button>Начать новую оценку</button>
         </Link>
       </div>
 
       {/* Статистика */}
       <div className="stats-dashboard">
         <div className="stat-card stat-total">
-          <div className="stat-icon">📋</div>
+          <div className="stat-icon"></div>
           <div className="stat-content">
             <div className="stat-value">{stats.total}</div>
             <div className="stat-label">Всего оценок</div>
@@ -82,7 +82,7 @@ function EvaluationSessionList() {
         </div>
         
         <div className="stat-card stat-completed">
-          <div className="stat-icon">✅</div>
+          <div className="stat-icon"></div>
           <div className="stat-content">
             <div className="stat-value">{stats.completed}</div>
             <div className="stat-label">Завершено</div>
@@ -90,7 +90,7 @@ function EvaluationSessionList() {
         </div>
         
         <div className="stat-card stat-progress">
-          <div className="stat-icon">⏳</div>
+          <div className="stat-icon"></div>
           <div className="stat-content">
             <div className="stat-value">{stats.in_progress}</div>
             <div className="stat-label">В процессе</div>
@@ -98,7 +98,7 @@ function EvaluationSessionList() {
         </div>
         
         <div className="stat-card stat-pending">
-          <div className="stat-icon">⏸️</div>
+          <div className="stat-icon"></div>
           <div className="stat-content">
             <div className="stat-value">{stats.pending}</div>
             <div className="stat-label">В ожидании</div>
@@ -110,7 +110,7 @@ function EvaluationSessionList() {
         <div className="empty-state">
           <p>Пока нет сессий оценки</p>
           <Link to="/start-evaluation">
-            <button>➕ Создать первую оценку</button>
+            <button>Создать первую оценку</button>
           </Link>
         </div>
       ) : (
@@ -127,7 +127,7 @@ function EvaluationSessionList() {
               <div className="session-body">
                 <div className="session-info">
                   <div className="info-row">
-                    <span className="info-label">📅 Дата начала:</span>
+                    <span className="info-label">Дата начала:</span>
                     <span className="info-value">
                       {new Date(session.start_date).toLocaleDateString('ru-RU')}
                     </span>
@@ -135,7 +135,7 @@ function EvaluationSessionList() {
                   
                   {session.end_date && (
                     <div className="info-row">
-                      <span className="info-label">📅 Дата окончания:</span>
+                      <span className="info-label">Дата окончания:</span>
                       <span className="info-value">
                         {new Date(session.end_date).toLocaleDateString('ru-RU')}
                       </span>
@@ -146,11 +146,11 @@ function EvaluationSessionList() {
               
               <div className="session-footer">
                 <Link to={`/evaluation-session/${session.id}`}>
-                  <button className="secondary-btn">📝 Оценить</button>
+                  <button className="secondary-btn">Оценить</button>
                 </Link>
                 {session.status === 'completed' && (
                   <Link to={`/evaluation-session/${session.id}/results`}>
-                    <button>📊 Результаты</button>
+                    <button>Результаты</button>
                   </Link>
                 )}
               </div>

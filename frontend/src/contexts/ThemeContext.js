@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 export const THEMES = [
-  { id: 'red', label: 'Красная', emoji: '🟥' },
-  { id: 'purple', label: 'Фиолетовая', emoji: '🟪' },
-  { id: 'yellow', label: 'Жёлтая', emoji: '🟨' },
+  { id: 'red', label: 'Красная' },
+  { id: 'purple', label: 'Фиолетовая' },
+  { id: 'yellow', label: 'Жёлтая' },
 ];
 
 const DEFAULT_THEME = 'red';

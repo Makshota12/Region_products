@@ -31,14 +31,14 @@ function EvaluationSessionForm() {
 
   return (
     <div>
-      <h1>🚀 Начать новую оценку</h1>
+      <h1> Начать новую оценку</h1>
       <p style={{ color: '#666', marginBottom: '30px' }}>
         Выберите продукт для проведения оценки зрелости
       </p>
       
       <form onSubmit={handleSubmit}>
         <div>
-          <label>📦 Выберите продукт:</label>
+          <label> Выберите продукт:</label>
           <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)} required>
             <option value="">-- Выберите продукт --</option>
             {products.map(product => (
@@ -46,7 +46,7 @@ function EvaluationSessionForm() {
             ))}
           </select>
         </div>
-        <button type="submit">🚀 Начать оценку</button>
+        <button type="submit"> Начать оценку</button>
       </form>
     </div>
   );
