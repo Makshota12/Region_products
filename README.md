@@ -1897,6 +1897,132 @@ k6 run tests/performance/k6-smoke.js
 7. Терминал/отчет: запуск `k6` с итоговыми метриками.  
 8. CI: успешный прогон `GitHub Actions` (lint + tests + docker build).
 
+### Пошаговый гайд по подготовке скриншотов в Postman
+
+Ниже приведен практический сценарий, который можно выполнить последовательно и получить готовый набор скриншотов для раздела тестирования.
+
+#### Шаг 1. Настройка окружения в Postman
+
+1. Создайте environment `local`.
+2. Добавьте переменные:
+   - `base_url = http://localhost:8000`
+   - `token =` (пустое значение на старте)
+3. Убедитесь, что environment `local` выбран в правом верхнем углу Postman.
+
+#### Шаг 2. Базовая коллекция запросов
+
+Создайте коллекцию `Diploma Testing` и добавьте запросы в следующем порядке.
+
+1) **Проверка без авторизации (скрин для 401)**
+
+- Method: `GET`
+- URL: `{{base_url}}/api/products/`
+- Без заголовка `Authorization`
+- Ожидаемо: `401 Authentication credentials were not provided`
+
+2) **Вход и получение JWT**
+
+- Method: `POST`
+- URL: `{{base_url}}/api/auth/login/`
+- Body -> raw -> JSON:
+
+```json
+{
+  "username": "admin",
+  "password": "admin123"
+}
+```
+
+- Ожидаемо: `200`, в ответе есть поле `token`
+- Скопируйте значение `token` в переменную environment `token`
+
+3) **Проверка авторизованного запроса (скрин для 200)**
+
+- Method: `GET`
+- URL: `{{base_url}}/api/auth/user/`
+- Authorization -> `Bearer Token` -> `{{token}}`
+- Ожидаемо: `200`, JSON с `id`, `username`, `email`, `role`, `is_staff`
+
+4) **Создание продукта**
+
+- Method: `POST`
+- URL: `{{base_url}}/api/products/`
+- Authorization: `Bearer {{token}}`
+- Body -> raw -> JSON:
+
+```json
+{
+  "name": "Мобильное приложение Умный регион",
+  "description": "Тестовый продукт для раздела 3.3",
+  "department_owner": "Минцифры региона",
+  "product_link": "https://example.com",
+  "launch_date": "2024-01-15",
+  "is_archived": false
+}
+```
+
+- Ожидаемо: `201`, в ответе есть `id` продукта (сохраните его как `product_id`)
+
+5) **Создание сессии оценки**
+
+- Method: `POST`
+- URL: `{{base_url}}/api/evaluation-sessions/`
+- Authorization: `Bearer {{token}}`
+- Body -> raw -> JSON:
+
+```json
+{
+  "product": 1,
+  "status": "pending"
+}
+```
+
+> Если `product` не равен `1`, подставьте `id` из предыдущего шага.
+
+- Ожидаемо: `201`, в ответе есть `id` сессии (сохраните как `session_id`)
+
+6) **Проверка расчетного endpoint**
+
+- Method: `GET`
+- URL: `{{base_url}}/api/evaluation-sessions/{session_id}/get_overall_maturity_index/`
+- Authorization: `Bearer {{token}}`
+- Ожидаемо: `200`, JSON с полем `overall_index`
+
+7) **Проверка доменных оценок**
+
+- Method: `GET`
+- URL: `{{base_url}}/api/evaluation-sessions/{session_id}/get_domain_scores/`
+- Authorization: `Bearer {{token}}`
+- Ожидаемо: `200`, JSON с `domain_scores`
+
+8) **Генерация PDF-паспорта**
+
+- Method: `GET`
+- URL: `{{base_url}}/api/evaluation-sessions/{session_id}/generate_maturity_passport/`
+- Authorization: `Bearer {{token}}`
+- Ожидаемо: `200`, файл PDF скачивается/открывается
+
+#### Шаг 3. Как правильно делать скриншоты
+
+На каждом скриншоте должны быть видны:
+
+- метод и URL запроса;
+- вкладка `Body` запроса (если есть payload);
+- HTTP-статус ответа (`200/201/401/403`);
+- JSON-ответ (или факт загрузки PDF);
+- время выполнения и размер ответа (желательно).
+
+#### Шаг 4. Рекомендуемое именование файлов
+
+- `fig-3-8-auth-401-no-token.png`
+- `fig-3-9-auth-login-jwt-200.png`
+- `fig-3-10-auth-user-200.png`
+- `fig-3-11-create-product-201.png`
+- `fig-3-12-create-session-201.png`
+- `fig-3-13-overall-index-200.png`
+- `fig-3-14-domain-scores-200.png`
+- `fig-3-15-pdf-passport-200.png`
+
 ### Рекомендации по дальнейшему развитию
 
 1. Расширить автоматизацию тестирования полноценными e2e-сценариями (`Playwright`/`Selenium`) для критических пользовательских путей.  
