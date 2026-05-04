@@ -1789,6 +1789,244 @@ flowchart TD
 
 ---
 
+## 🔧 Важные функции в коде (backend)
+
+Ниже перечислены ключевые функции ядра системы из `backend/digital_product_maturity_project/digital_product_maturity/core/`: как называются, для чего нужны и что содержат внутри.
+
+### `models.py` — расчётные функции
+
+- `EvaluationSession.get_criterion_score(assigned_criterion_id)`
+  - **Для чего:** вернуть балл по одному назначенному критерию в рамках сессии.
+  - **Что содержит:** получает `AssignedCriterion` по `id`, проверяет наличие связанного `answer`, возвращает `score_value` или `None`.
+
+- `EvaluationSession.get_domain_score(domain_id)`
+  - **Для чего:** посчитать оценку домена с учётом весов критериев.
+  - **Что содержит:** выбирает все `assigned_criteria` домена, для каждого ответа суммирует `score * criterion.weight`, считает сумму весов и возвращает нормализованное значение `sum(score*weight)/sum(weight)`.
+
+- `EvaluationSession.get_overall_maturity_index()`
+  - **Для чего:** вычислить интегральный индекс зрелости продукта (0-10).
+  - **Что содержит:** проходит по всем доменам, берёт `get_domain_score`, учитывает вес домена и рассчитывает взвешенное среднее только по доменам, где есть оценка.
+
+### `views.py` — права доступа и API-логика
+
+- `_resolve_role(user)`
+  - **Для чего:** единообразно определить роль пользователя для всех permission-классов.
+  - **Что содержит:** возвращает `admin` для `is_staff/is_superuser`, иначе читает роль из `user.profile.role`.
+
+- `CatalogPermission.has_permission(...)`
+  - **Для чего:** контролировать доступ к каталогам (`Domain`, `Criterion`, `RatingScale`).
+  - **Что содержит:** чтение разрешено всем аутентифицированным, изменение — только роли `admin`.
+
+- `ProductPermission.has_permission(...)`
+  - **Для чего:** ограничить операции с продуктами по ролям.
+  - **Что содержит:** чтение всем, запись только `admin` и `owner`.
+
+- `EvaluationPermission.has_permission(...)`
+  - **Для чего:** ограничить операции по сессиям и ответам.
+  - **Что содержит:** чтение всем, запись для `admin`, `expert`, `owner`; `observer` — только read-only.
+
+- `EvaluationSessionViewSet.create(...)`
+  - **Для чего:** создать сессию оценки и сразу развернуть набор назначенных критериев.
+  - **Что содержит:** транзакцию `transaction.atomic()`, `perform_create()`, затем цикл по всем `Criterion` и `AssignedCriterion.get_or_create(...)`.
+
+- `EvaluationSessionViewSet.perform_create(serializer)`
+  - **Для чего:** фиксировать автора создаваемой сессии.
+  - **Что содержит:** `serializer.save(created_by=self.request.user)`.
+
+- `EvaluationSessionViewSet.get_overall_maturity_index(...)`
+  - **Для чего:** REST endpoint индекса зрелости по сессии.
+  - **Что содержит:** вызов модельной функции `session.get_overall_maturity_index()` и возврат JSON с индексом.
+
+- `EvaluationSessionViewSet.get_domain_scores(...)`
+  - **Для чего:** отдать оценки по всем доменам для дашбордов.
+  - **Что содержит:** проходит по `Domain.objects.all()`, для каждого домена вызывает `session.get_domain_score(...)`.
+
+- `EvaluationSessionViewSet.compare_products(...)`
+  - **Для чего:** сравнить продукты по последней завершённой оценке.
+  - **Что содержит:** выбирает `status='completed'`, берёт последнюю сессию на продукт, формирует отсортированный список по `overall_index`.
+
+- `EvaluationSessionViewSet.product_history(...)`
+  - **Для чего:** показать динамику индекса конкретного продукта.
+  - **Что содержит:** валидирует `product_id`, получает все завершённые сессии по дате, отдаёт историю `session_id + start_date + overall_index`.
+
+- `EvaluationSessionViewSet.generate_maturity_passport(...)`
+  - **Для чего:** генерировать PDF-паспорт зрелости.
+  - **Что содержит:** формирует многостраничный PDF (титул, общий индекс, оценки по доменам, детализация критериев), встраивает графики из `_render_gauge_chart`, `_render_radar_chart`, `_render_bar_chart`.
+
+- `AssignedCriterionViewSet.verify(...)` / `request_changes(...)`
+  - **Для чего:** workflow экспертной верификации критериев.
+  - **Что содержит:** проверку роли (`admin|expert`), обновление `is_verified`, `verification_status`, `verification_comment`.
+
+- `EvaluationAnswerViewSet._reset_verification(answer)`
+  - **Для чего:** автоматически сбрасывать верификацию при любом изменении ответа.
+  - **Что содержит:** переводит связанный `AssignedCriterion` в `is_verified=False`, `verification_status='pending'`.
+
+- `EvaluationAnswerViewSet.perform_create(...)` / `perform_update(...)`
+  - **Для чего:** гарантировать сброс верификации после создания/редактирования ответа.
+  - **Что содержит:** сохраняет `EvaluationAnswer`, затем вызывает `_reset_verification(...)`.
+
+- `generate_portfolio_report(request)`
+  - **Для чего:** генерировать сводный PDF по портфелю продуктов.
+  - **Что содержит:** перебирает неархивные продукты, берёт последнюю завершённую сессию, считает индекс и добавляет сводную статистику.
+
+### `auth_views.py` — функции авторизации
+
+- `register_user(request)`
+  - **Для чего:** регистрация нового пользователя.
+  - **Что содержит:** проверку обязательных полей и уникальности `username/email`, создание `User`.
+
+- `login_user(request)`
+  - **Для чего:** вход пользователя в систему.
+  - **Что содержит:** `authenticate(...)`, выпуск JWT (`access + refresh`) и возврат роли пользователя.
+
+- `logout_user(request)`
+  - **Для чего:** завершить сессию.
+  - **Что содержит:** blacklist refresh-токена через `RefreshToken.blacklist()`.
+
+- `current_user(request)`
+  - **Для чего:** получить профиль текущего пользователя.
+  - **Что содержит:** возврат `id`, `username`, `email`, `role`, `is_staff`, `avatar_url`.
+
+- `update_current_user(request)`
+  - **Для чего:** обновление профиля пользователя.
+  - **Что содержит:** смену `username` (с проверкой уникальности) и загрузку `avatar`.
+
+- `google_login(request)`
+  - **Для чего:** вход через Google OAuth (`id_token`).
+  - **Что содержит:** валидацию токена через `tokeninfo`, проверку `aud` и `email_verified`, find-or-create пользователя, выдачу JWT.
+
+### `signals.py` — автоматизация при создании пользователя
+
+- `create_user_profile(sender, instance, created, **kwargs)`
+  - **Для чего:** автоматически создать профиль новому пользователю.
+  - **Что содержит:** `Role.get_or_create(name='observer')` и `Profile.get_or_create(...)` с ролью "Наблюдатель" по умолчанию.
+
+---
+
+## 🎨 Важные функции в коде (frontend)
+
+Ниже описаны ключевые функции фронтенда из `frontend/src`: как называются, зачем нужны и что делают в логике интерфейса.
+
+### `App.js` и базовая инициализация
+
+- `App` (роутинг приложения)
+  - **Для чего:** центральная точка навигации SPA.
+  - **Что содержит:** оборачивает приложение в `ThemeProvider` + `Router`, описывает маршруты ко всем страницам.
+
+- `checkAuth` (внутри `App`, в `useEffect`)
+  - **Для чего:** поддерживать актуальное состояние авторизации в шапке.
+  - **Что содержит:** читает `token` и `username` из `localStorage`, обновляет `isLoggedIn`/`username`, подписывается на `storage` и периодическую проверку.
+
+- `axios.interceptors.request.use(...)` в `index.js`
+  - **Для чего:** автоматически добавлять JWT во все запросы.
+  - **Что содержит:** при наличии `token` записывает `Authorization: Bearer <token>` в заголовок.
+
+- `module.exports = function(app) { ... }` в `setupProxy.js`
+  - **Для чего:** проксировать API-запросы в dev-режиме.
+  - **Что содержит:** перенаправляет `/api/*` на backend (`API_PROXY_TARGET` или `http://localhost:8000`).
+
+### `ThemeContext.js` и переключение темы
+
+- `applyTheme(themeId)`
+  - **Для чего:** применять тему ко всему UI.
+  - **Что содержит:** устанавливает `data-theme` на `document.documentElement`.
+
+- `ThemeProvider` + `setTheme`
+  - **Для чего:** хранить тему и давать её всем компонентам.
+  - **Что содержит:** инициализацию из `localStorage`, валидацию темы из списка `THEMES`, запись выбранной темы обратно в `localStorage`.
+
+- `ThemeSwitcher` (компонент + обработчики меню)
+  - **Для чего:** UI-переключатель темы.
+  - **Что содержит:** открытие/закрытие dropdown, закрытие по клику вне компонента, вызов `setTheme(...)` при выборе пункта.
+
+### `Login/Register/Profile` — аутентификация и профиль
+
+- `Login.handleSubmit`
+  - **Для чего:** вход по логину/паролю.
+  - **Что содержит:** `POST /api/auth/login/`, сохранение токена/username, переход в профиль.
+
+- `Login.handleGoogleCredential`
+  - **Для чего:** вход через Google.
+  - **Что содержит:** отправку `id_token` на `POST /api/auth/google/`, сохранение JWT и имени пользователя.
+
+- `Register.handleSubmit`
+  - **Для чего:** регистрация нового пользователя.
+  - **Что содержит:** проверку пароля (совпадение и минимальная длина), `POST /api/auth/register/`, редирект на вход.
+
+- `Profile` загрузка пользователя (`useEffect`)
+  - **Для чего:** поднять текущие данные профиля.
+  - **Что содержит:** запрос `GET /api/auth/user/`, обработку `401`, синхронизацию `username` в `localStorage`.
+
+- `Profile.handleSaveProfile`
+  - **Для чего:** редактирование профиля.
+  - **Что содержит:** `PATCH /api/auth/user/update/` с `FormData` (`username` + `avatar`), обновление локального состояния.
+
+- `Profile.handleLogout`
+  - **Для чего:** выход из аккаунта.
+  - **Что содержит:** очистку `localStorage` и переход на `/login`.
+
+### `Product*` — управление продуктами
+
+- `ProductList` загрузка данных (`useEffect`)
+  - **Для чего:** показать реестр продуктов.
+  - **Что содержит:** `GET /api/products/` и сохранение списка в `products`.
+
+- `ProductForm.handleSubmit`
+  - **Для чего:** создание/обновление карточки продукта.
+  - **Что содержит:** `POST /api/products/` (создание) или `PUT /api/products/:id/` (редактирование), затем возврат на список.
+
+- `ProductDetail.handleDelete`
+  - **Для чего:** удаление продукта.
+  - **Что содержит:** подтверждение действия, `DELETE /api/products/:id/`, навигацию на главную.
+
+- `ProductDetail.handleArchive`
+  - **Для чего:** архивировать/разархивировать продукт.
+  - **Что содержит:** `PATCH` с переключением `is_archived`, обновление состояния карточки.
+
+### `Evaluation*` — сессии, оценки и аналитика
+
+- `EvaluationSessionForm.handleSubmit`
+  - **Для чего:** запуск новой сессии оценки.
+  - **Что содержит:** `POST /api/evaluation-sessions/` с выбранным продуктом, переход на страницу заполнения сессии.
+
+- `EvaluationSessionList` загрузка и статистика (`useEffect`)
+  - **Для чего:** показать список сессий и быстрые KPI.
+  - **Что содержит:** загрузку сессий/продуктов и расчёт агрегатов `total`, `completed`, `in_progress`, `pending`.
+
+- `EvaluationInput.loadData`
+  - **Для чего:** подготовить форму оценки к работе.
+  - **Что содержит:** загрузку сессии, продукта, назначенных критериев, сбор первоначальных ответов и прогресса заполнения.
+
+- `EvaluationInput.handleAnswerChange`
+  - **Для чего:** обновлять ответ по критерию в реальном времени.
+  - **Что содержит:** изменение `answers[criterionId]` и пересчёт прогресса (сколько критериев заполнено и процент).
+
+- `EvaluationInput.handleSubmit`
+  - **Для чего:** сохранить заполненные ответы и обновить статус сессии.
+  - **Что содержит:** для каждого критерия делает `POST/PATCH` ответа, затем выставляет сессии `completed` или `in_progress`.
+
+- `EvaluationInput.handleVerify` / `handleRequestChanges`
+  - **Для чего:** экспертная проверка ответа по критерию.
+  - **Что содержит:** вызовы `/verify/` и `/request_changes/` с комментарием верификатора.
+
+- `EvaluationResults.loadData`
+  - **Для чего:** загрузить все данные экрана результатов.
+  - **Что содержит:** получение сессии, продукта, доменных баллов, общего индекса, сравнений и истории.
+
+- `EvaluationResults.reloadCompare` + `handleCompareSelection`
+  - **Для чего:** сравнение выбранных продуктов.
+  - **Что содержит:** формирование `product_ids` и запрос `compare_products`, обновление данных для графика сравнения.
+
+- `EvaluationResults.getMaturityLevel`
+  - **Для чего:** определить текстовый уровень зрелости.
+  - **Что содержит:** сопоставление диапазона индекса с меткой уровня и цветом.
+
+- `EvaluationResults.handleDownloadPDF`
+  - **Для чего:** скачать паспорт зрелости.
+  - **Что содержит:** `GET` PDF endpoint как `blob`, генерацию ссылки и запуск скачивания в браузере.
+
+---
+
 ## 📅 Диаграмма Ганта (план дипломного проекта)
 
 ```mermaid
