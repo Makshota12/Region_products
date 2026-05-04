@@ -1758,12 +1758,28 @@ docker exec -i <postgres_container_name> psql -U postgres -d digital_product_mat
 
 ### Проверка требований производительности (k6)
 
-Добавлен smoke/performance-сценарий: `tests/performance/k6-smoke.js`.
+Добавлены сценарии нагрузочного тестирования:
+
+- `tests/performance/k6-smoke.js` - базовый smoke/performance;
+- `tests/performance/k6-spike.js` - spike test (резкий всплеск нагрузки);
+- `tests/performance/k6-soak.js` - soak test (длительная стабильная нагрузка).
 
 Пример запуска (50 виртуальных пользователей, 60 сек):
 
 ```bash
 k6 run tests/performance/k6-smoke.js
+```
+
+Пример запуска spike-сценария:
+
+```bash
+k6 run tests/performance/k6-spike.js
+```
+
+Пример запуска soak-сценария:
+
+```bash
+k6 run tests/performance/k6-soak.js
 ```
 
 Критерии в сценарии:
